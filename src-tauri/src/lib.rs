@@ -5,6 +5,7 @@ mod library;
 mod backup;
 mod studies;
 mod activities;
+mod references;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -32,6 +33,9 @@ pub fn run() {
             studies::list_studies,
             activities::create_activity,
             activities::list_activities,
+            references::create_reference,
+            references::list_references,
+            references::open_reference_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
