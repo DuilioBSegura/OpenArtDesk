@@ -6,6 +6,7 @@ mod backup;
 mod studies;
 mod activities;
 mod references;
+mod dashboard;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -36,6 +37,7 @@ pub fn run() {
             references::create_reference,
             references::list_references,
             references::open_reference_url,
+            dashboard::get_dashboard_summary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
