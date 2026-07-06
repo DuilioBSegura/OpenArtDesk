@@ -3,6 +3,7 @@ mod preferences;
 mod storage;
 mod library;
 mod backup;
+mod studies;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -26,6 +27,8 @@ pub fn run() {
             library::open_library_item_file,
             backup::create_full_backup,
             backup::open_backups_folder,
+            studies::create_study,
+            studies::list_studies,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
