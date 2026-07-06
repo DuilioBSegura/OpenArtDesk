@@ -47,20 +47,20 @@ fn apply_schema(connection: &Connection) -> Result<(), String> {
             );
 
             CREATE TABLE IF NOT EXISTS library_items (
-              id TEXT PRIMARY KEY,
-              title TEXT NOT NULL,
-              author TEXT,
-              description TEXT,
-              category TEXT,
-              status TEXT NOT NULL,
-              cover_path TEXT,
-              file_path TEXT,
-              original_file_name TEXT,
-              file_type TEXT,
-              file_size INTEGER,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL
-            );
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                author TEXT,
+                description TEXT,
+                category TEXT,
+                status TEXT NOT NULL,
+                cover_path TEXT,
+                file_path TEXT,
+                original_file_name TEXT,
+                file_type TEXT,
+                file_size INTEGER,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+                );
 
             CREATE TABLE IF NOT EXISTS studies (
               id TEXT PRIMARY KEY,
