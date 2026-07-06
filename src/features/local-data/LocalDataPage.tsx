@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import { ErrorMessage, PageHero, SectionCard } from '../../components/ui/Surface';
 import { BackupPanel } from './BackupPanel';
-
 import {
   getDatabaseStatus,
   type DatabaseStatus,
 } from './databaseapi';
-
 import {
   getStorageStatus,
   type StorageStatus,
@@ -39,7 +39,7 @@ export function LocalDataPage() {
             error:
               error instanceof Error
                 ? error.message
-                : 'Não foi possível carregar o status do banco local.',
+                : 'Nao foi possivel carregar o status do banco local.',
           });
         }
       } finally {
@@ -65,7 +65,7 @@ export function LocalDataPage() {
             error:
               error instanceof Error
                 ? error.message
-                : 'Não foi possível carregar o status do armazenamento local.',
+                : 'Nao foi possivel carregar o status do armazenamento local.',
           });
         }
       } finally {
@@ -84,185 +84,99 @@ export function LocalDataPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-accent">Dados Locais</p>
+    <div className="desktop-page">
+      <PageHero
+        eyebrow="Dados Locais"
+        title="Privacidade e armazenamento local"
+        description="O OpenArtDesk salva preferencias em JSON local, dados estruturados em SQLite e arquivos grandes no sistema de arquivos do seu computador."
+        actions={<Badge tone="accent">Local-first</Badge>}
+      />
 
-          <h1 className="text-2xl font-semibold text-foreground">
-            Privacidade e armazenamento local
-          </h1>
-
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            O OpenArtDesk salva seus dados localmente no seu computador.
-            Preferências visuais ficam em JSON local, dados estruturados ficam
-            em SQLite e arquivos grandes serão salvos no sistema de arquivos
-            local.
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Banco SQLite local
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Status da camada de dados estruturados do aplicativo.
-            </p>
-          </div>
-
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            Sprint 05
-          </span>
-        </div>
-
+      <SectionCard
+        title="Banco SQLite local"
+        description="Status da camada de dados estruturados do aplicativo."
+        actions={<Badge>Sprint 05</Badge>}
+      >
         {isLoadingDatabaseStatus ? (
-          <p className="text-sm text-muted-foreground">
-            Verificando banco local...
-          </p>
+          <div className="loading-panel">
+            <p>Verificando banco local...</p>
+          </div>
         ) : databaseStatus?.initialized ? (
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border border-border bg-surface-elevated p-4">
-                <p className="text-xs text-muted-foreground">Status</p>
-
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  Inicializado
-                </p>
+          <div className="data-stack">
+            <div className="data-card-grid">
+              <div className="data-tile">
+                <span>Status</span>
+                <strong>Inicializado</strong>
               </div>
-
-              <div className="rounded-xl border border-border bg-surface-elevated p-4">
-                <p className="text-xs text-muted-foreground">Arquivo</p>
-
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {databaseStatus.databaseFileName}
-                </p>
+              <div className="data-tile">
+                <span>Arquivo</span>
+                <strong>{databaseStatus.databaseFileName}</strong>
               </div>
-
-              <div className="rounded-xl border border-border bg-surface-elevated p-4">
-                <p className="text-xs text-muted-foreground">Schema</p>
-
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  v{databaseStatus.schemaVersion ?? 'desconhecida'}
-                </p>
+              <div className="data-tile">
+                <span>Schema</span>
+                <strong>v{databaseStatus.schemaVersion ?? 'desconhecida'}</strong>
               </div>
             </div>
 
-            <div>
-              <h3 className="mb-2 text-sm font-medium text-foreground">
-                Tabelas criadas
-              </h3>
-
-              <div className="flex flex-wrap gap-2">
+            <div className="data-tile">
+              <span>Tabelas criadas</span>
+              <div className="action-row mt-3">
                 {databaseStatus.tables.map((table) => (
-                  <span
-                    key={table}
-                    className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs text-muted-foreground"
-                  >
-                    {table}
-                  </span>
+                  <Badge key={table}>{table}</Badge>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-surface-elevated p-4">
-            <p className="text-sm font-medium text-foreground">
-              Não foi possível inicializar o banco local.
-            </p>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              {databaseStatus?.error ?? 'Erro desconhecido.'}
-            </p>
-          </div>
+          <ErrorMessage>
+            {databaseStatus?.error ?? 'Erro desconhecido ao inicializar o banco local.'}
+          </ErrorMessage>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Estrutura de arquivos locais
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Diretórios internos preparados para PDFs, capas, imagens,
-              brushes, imports e backups.
-            </p>
-          </div>
-
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            Sprint 06
-          </span>
-        </div>
-
+      <SectionCard
+        title="Estrutura de arquivos locais"
+        description="Diretorios internos preparados para PDFs, capas, imagens, brushes, imports e backups."
+        actions={<Badge>Sprint 06</Badge>}
+      >
         {isLoadingStorageStatus ? (
-          <p className="text-sm text-muted-foreground">
-            Verificando pastas locais...
-          </p>
+          <div className="loading-panel">
+            <p>Verificando pastas locais...</p>
+          </div>
         ) : storageStatus?.initialized ? (
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-border bg-surface-elevated p-4">
-                <p className="text-xs text-muted-foreground">Status</p>
-
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  Inicializado
-                </p>
+          <div className="data-stack">
+            <div className="data-card-grid">
+              <div className="data-tile">
+                <span>Status</span>
+                <strong>Inicializado</strong>
               </div>
-
-              <div className="rounded-xl border border-border bg-surface-elevated p-4">
-                <p className="text-xs text-muted-foreground">Diretório raiz</p>
-
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {storageStatus.rootDirectoryName}
-                </p>
+              <div className="data-tile">
+                <span>Diretorio raiz</span>
+                <strong>{storageStatus.rootDirectoryName}</strong>
               </div>
             </div>
 
-            <div>
-              <h3 className="mb-2 text-sm font-medium text-foreground">
-                Pastas preparadas
-              </h3>
-
-              <div className="grid gap-2 md:grid-cols-2">
+            <div className="data-tile">
+              <span>Pastas preparadas</span>
+              <div className="data-card-grid mt-3">
                 {storageStatus.directories.map((directory) => (
-                  <div
-                    key={directory.key}
-                    className="rounded-xl border border-border bg-surface-elevated px-3 py-2"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {directory.relativePath}
-                      </span>
-
-                      <span className="text-xs font-medium text-foreground">
-                        {directory.exists ? 'OK' : 'Ausente'}
-                      </span>
-                    </div>
+                  <div key={directory.key} className="data-tile">
+                    <span>{directory.relativePath}</span>
+                    <strong>{directory.exists ? 'OK' : 'Ausente'}</strong>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-surface-elevated p-4">
-            <p className="text-sm font-medium text-foreground">
-              Não foi possível inicializar a estrutura de arquivos locais.
-            </p>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              {storageStatus?.error ?? 'Erro desconhecido.'}
-            </p>
-          </div>
+          <ErrorMessage>
+            {storageStatus?.error ??
+              'Erro desconhecido ao inicializar a estrutura de arquivos locais.'}
+          </ErrorMessage>
         )}
-      </section>
-       <BackupPanel/>
+      </SectionCard>
+
+      <BackupPanel />
     </div>
-    
-     
   );
 }

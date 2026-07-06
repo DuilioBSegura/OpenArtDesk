@@ -11,7 +11,7 @@ export function OnboardingPage({
     <PageScaffold
       eyebrow="Boas-vindas"
       title="Organize sua mesa de estudos local"
-      description="Esta e a primeira tela do OpenArtDesk. A Sprint 4 salva preferencias locais sem dados reais ou funcionalidades de dominio."
+      description="Prepare uma mesa de trabalho local para PDFs, estudos, atividades e referencias, com privacidade por padrao."
     >
       <div className="onboarding-grid">
         <article>
@@ -32,7 +32,8 @@ export function OnboardingPage({
           "Rotas centralizadas a partir do moduleRegistry.",
           "Modelo preparado para esconder, ordenar e agrupar modulos.",
           "Preferencias de interface salvas em JSON local.",
-          "Sem SQLite, upload, backup, IA, plugins ou leitor PDF.",
+          "Dados estruturados em SQLite e arquivos grandes no filesystem local.",
+          "Sem login, nuvem, IA, plugins ou leitor PDF embutido no MVP.",
         ]}
       />
       <div className="onboarding-actions">

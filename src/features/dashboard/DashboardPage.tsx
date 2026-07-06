@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import {
+  ErrorMessage,
+  MetricCard,
+  PageHero,
+  SectionCard,
+} from '../../components/ui/Surface';
+import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 import {
   getDashboardSummary,
   type DashboardActivity,
@@ -8,7 +16,6 @@ import {
   type DashboardStudy,
   type DashboardSummary,
 } from './dashboardApi';
-import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 
 function normalizeDisplayUrl(url: string | null) {
   if (!url) {
@@ -18,92 +25,50 @@ function normalizeDisplayUrl(url: string | null) {
   return url.replace(/^https?:\/\//, '');
 }
 
-function DashboardMetricCard({
-  label,
-  value,
-  description,
-}: {
-  label: string;
-  value: string | number;
-  description: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-
-      <p className="mt-2 text-2xl font-semibold text-foreground">
-        {value}
-      </p>
-
-      <p className="mt-1 text-xs text-muted-foreground">
-        {description}
-      </p>
-    </div>
-  );
-}
-
 function EmptyRecentList({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated p-4">
-      <p className="text-sm text-muted-foreground">{message}</p>
+    <div className="ui-empty-state">
+      <h3>Nada por aqui ainda</h3>
+      <p>{message}</p>
     </div>
   );
 }
 
 function RecentSection({
-  title,
-  description,
   children,
+  description,
+  title,
 }: {
-  title: string;
+  children: ReactNode;
   description: string;
-  children: React.ReactNode;
+  title: string;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground">
-          {title}
-        </h2>
-
-        <p className="text-sm text-muted-foreground">
-          {description}
-        </p>
-      </div>
-
+    <SectionCard title={title} description={description}>
       {children}
-    </section>
+    </SectionCard>
   );
 }
 
 function RecentLibraryItems({ items }: { items: DashboardLibraryItem[] }) {
   if (items.length === 0) {
-    return <EmptyRecentList message="Nenhum PDF cadastrado ainda." />;
+    return <EmptyRecentList message="Adicione PDFs para ver a biblioteca recente." />;
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="entity-list">
       {items.map((item) => (
-        <article
-          key={item.id}
-          className="rounded-xl border border-border bg-surface-elevated p-4"
-        >
-          <h3 className="text-sm font-semibold text-foreground">
-            {item.title}
-          </h3>
+        <article key={item.id} className="entity-card">
+          <div className="entity-card-main">
+            <div>
+              <h3>{item.title}</h3>
+              <p>{item.author || 'Autor nao informado'}</p>
+            </div>
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            {item.author || 'Autor não informado'}
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {item.status}
-            </span>
-
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              Atualizado em {formatOptionalDate(item.updatedAt)}
-            </span>
+            <div className="action-row">
+              <Badge>{item.status}</Badge>
+              <Badge>Atualizado em {formatOptionalDate(item.updatedAt)}</Badge>
+            </div>
           </div>
         </article>
       ))}
@@ -113,36 +78,21 @@ function RecentLibraryItems({ items }: { items: DashboardLibraryItem[] }) {
 
 function RecentStudies({ studies }: { studies: DashboardStudy[] }) {
   if (studies.length === 0) {
-    return <EmptyRecentList message="Nenhum estudo cadastrado ainda." />;
+    return <EmptyRecentList message="Registre estudos para acompanhar sua evolucao." />;
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="entity-list">
       {studies.map((study) => (
-        <article
-          key={study.id}
-          className="rounded-xl border border-border bg-surface-elevated p-4"
-        >
-          <h3 className="text-sm font-semibold text-foreground">
-            {study.title}
-          </h3>
+        <article key={study.id} className="entity-card">
+          <div className="entity-card-main">
+            <h3>{study.title}</h3>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {study.category ? (
-              <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                {study.category}
-              </span>
-            ) : null}
-
-            {study.difficulty ? (
-              <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                {study.difficulty}
-              </span>
-            ) : null}
-
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              Atualizado em {formatOptionalDate(study.updatedAt)}
-            </span>
+            <div className="action-row">
+              {study.category ? <Badge>{study.category}</Badge> : null}
+              {study.difficulty ? <Badge tone="warning">{study.difficulty}</Badge> : null}
+              <Badge>Atualizado em {formatOptionalDate(study.updatedAt)}</Badge>
+            </div>
           </div>
         </article>
       ))}
@@ -152,38 +102,24 @@ function RecentStudies({ studies }: { studies: DashboardStudy[] }) {
 
 function RecentActivities({ activities }: { activities: DashboardActivity[] }) {
   if (activities.length === 0) {
-    return <EmptyRecentList message="Nenhuma atividade cadastrada ainda." />;
+    return <EmptyRecentList message="Crie atividades para visualizar a rotina recente." />;
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="entity-list">
       {activities.map((activity) => (
-        <article
-          key={activity.id}
-          className="rounded-xl border border-border bg-surface-elevated p-4"
-        >
-          <h3 className="text-sm font-semibold text-foreground">
-            {activity.title}
-          </h3>
+        <article key={activity.id} className="entity-card">
+          <div className="entity-card-main">
+            <h3>{activity.title}</h3>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {activity.status}
-            </span>
-
-            {activity.focusArea ? (
-              <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                {activity.focusArea}
-              </span>
-            ) : null}
-
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {formatDuration(activity.durationMinutes ?? 0, '0 min')}
-            </span>
-
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {formatOptionalDate(activity.activityDate)}
-            </span>
+            <div className="action-row">
+              <Badge tone={activity.status === 'done' ? 'success' : 'neutral'}>
+                {activity.status}
+              </Badge>
+              {activity.focusArea ? <Badge>{activity.focusArea}</Badge> : null}
+              <Badge>{formatDuration(activity.durationMinutes ?? 0, '0 min')}</Badge>
+              <Badge>{formatOptionalDate(activity.activityDate)}</Badge>
+            </div>
           </div>
         </article>
       ))}
@@ -193,38 +129,24 @@ function RecentActivities({ activities }: { activities: DashboardActivity[] }) {
 
 function RecentReferences({ references }: { references: DashboardReference[] }) {
   if (references.length === 0) {
-    return <EmptyRecentList message="Nenhuma referência cadastrada ainda." />;
+    return <EmptyRecentList message="Salve referencias para montar seu painel de estudo." />;
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="entity-list">
       {references.map((reference) => (
-        <article
-          key={reference.id}
-          className="rounded-xl border border-border bg-surface-elevated p-4"
-        >
-          <h3 className="text-sm font-semibold text-foreground">
-            {reference.title}
-          </h3>
+        <article key={reference.id} className="entity-card">
+          <div className="entity-card-main">
+            <div>
+              <h3>{reference.title}</h3>
+              <p>{normalizeDisplayUrl(reference.url)}</p>
+            </div>
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            {normalizeDisplayUrl(reference.url)}
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {reference.status}
-            </span>
-
-            {reference.category ? (
-              <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                {reference.category}
-              </span>
-            ) : null}
-
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              Atualizado em {formatOptionalDate(reference.updatedAt)}
-            </span>
+            <div className="action-row">
+              <Badge>{reference.status}</Badge>
+              {reference.category ? <Badge>{reference.category}</Badge> : null}
+              <Badge>Atualizado em {formatOptionalDate(reference.updatedAt)}</Badge>
+            </div>
           </div>
         </article>
       ))}
@@ -261,7 +183,7 @@ export function DashboardPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível carregar o dashboard.',
+          : 'Nao foi possivel carregar o dashboard.',
       );
     } finally {
       setIsLoading(false);
@@ -273,115 +195,91 @@ export function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-accent">Dashboard</p>
+    <div className="desktop-page">
+      <PageHero
+        eyebrow="Dashboard"
+        title="Visao geral do seu ambiente de estudos"
+        description="Acompanhe biblioteca, estudos, atividades e referencias salvas localmente no OpenArtDesk."
+        actions={<Badge tone="accent">Mesa local</Badge>}
+      />
 
-          <h1 className="text-2xl font-semibold text-foreground">
-            Visão geral do seu ambiente de estudos
-          </h1>
-
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Acompanhe sua biblioteca, estudos, atividades e referências salvas
-            localmente no OpenArtDesk.
-          </p>
-        </div>
-      </section>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
+      {errorMessage ? <ErrorMessage>{errorMessage}</ErrorMessage> : null}
 
       {isLoading ? (
-        <section className="rounded-2xl border border-border bg-surface p-6">
-          <p className="text-sm text-muted-foreground">
-            Carregando dashboard...
-          </p>
+        <section className="loading-panel">
+          <p>Carregando dashboard...</p>
         </section>
       ) : summary ? (
         <>
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetricCard
+          <section className="metric-grid">
+            <MetricCard
               label="Biblioteca"
               value={summary.totals.libraryItems}
               description="PDFs e materiais locais"
             />
-
-            <DashboardMetricCard
+            <MetricCard
               label="Estudos"
               value={summary.totals.studies}
-              description="Registros de evolução"
+              description="Registros de evolucao"
             />
-
-            <DashboardMetricCard
+            <MetricCard
               label="Atividades"
               value={summary.totals.activities}
-              description="Práticas e tarefas"
+              description="Praticas e tarefas"
             />
-
-            <DashboardMetricCard
-              label="Referências"
+            <MetricCard
+              label="Referencias"
               value={summary.totals.references}
               description="Links e materiais externos"
             />
-          </section>
-
-          <section className="grid gap-3 md:grid-cols-2">
-            <DashboardMetricCard
-              label="Atividades concluídas"
+            <MetricCard
+              tone="success"
+              label="Concluidas"
               value={summary.totals.completedActivities}
-              description="Sessões marcadas como concluídas"
+              description="Atividades finalizadas"
             />
-
-            <DashboardMetricCard
-              label="Tempo concluído"
+            <MetricCard
+              tone="accent"
+              label="Tempo concluido"
               value={formatDuration(summary.totals.totalCompletedMinutes, '0 min')}
-              description="Soma das atividades concluídas"
+              description="Soma das sessoes concluido"
             />
           </section>
 
           {!hasAnyData ? (
-            <section className="rounded-2xl border border-border bg-surface p-6">
-              <h2 className="text-lg font-semibold text-foreground">
-                Comece montando seu ambiente
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Adicione PDFs na Biblioteca, registre Estudos, crie Atividades
-                ou salve Referências. O dashboard será preenchido automaticamente
-                com seus dados locais.
-              </p>
-            </section>
+            <SectionCard
+              title="Comece montando seu ambiente"
+              description="Adicione PDFs na Biblioteca, registre Estudos, crie Atividades ou salve Referencias. O dashboard sera preenchido automaticamente com seus dados locais."
+            >
+              <Badge tone="accent">Tudo fica neste computador</Badge>
+            </SectionCard>
           ) : null}
 
           <section className="grid gap-4 xl:grid-cols-2">
             <RecentSection
               title="Biblioteca recente"
-              description="Últimos PDFs e materiais adicionados."
+              description="Ultimos PDFs e materiais adicionados."
             >
               <RecentLibraryItems items={summary.recentLibraryItems} />
             </RecentSection>
 
             <RecentSection
               title="Estudos recentes"
-              description="Últimos registros de evolução."
+              description="Ultimos registros de evolucao."
             >
               <RecentStudies studies={summary.recentStudies} />
             </RecentSection>
 
             <RecentSection
               title="Atividades recentes"
-              description="Últimas práticas e tarefas salvas."
+              description="Ultimas praticas e tarefas salvas."
             >
               <RecentActivities activities={summary.recentActivities} />
             </RecentSection>
 
             <RecentSection
-              title="Referências recentes"
-              description="Últimos links e materiais externos."
+              title="Referencias recentes"
+              description="Ultimos links e materiais externos."
             >
               <RecentReferences references={summary.recentReferences} />
             </RecentSection>

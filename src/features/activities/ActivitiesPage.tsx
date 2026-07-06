@@ -1,5 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import {
+  ActionButtonGroup,
+  ErrorMessage,
+  Field,
+  MetricCard,
+  PageHero,
+  SectionCard,
+} from '../../components/ui/Surface';
+import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 import {
   createActivity,
   deleteActivity,
@@ -9,38 +20,35 @@ import {
   type ActivityStatus,
   type EnergyLevel,
 } from './activitiesApi';
-import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 
 const statusLabels: Record<ActivityStatus, string> = {
   planned: 'Planejada',
-  done: 'Concluída',
+  done: 'Concluida',
   skipped: 'Pulada',
 };
 
 const energyLabels: Record<EnergyLevel, string> = {
   low: 'Baixa',
-  medium: 'Média',
+  medium: 'Media',
   high: 'Alta',
 };
 
-const focusAreaLabels: Record<string, string> = {
-  drawing: 'Desenho',
-  anatomy: 'Anatomia',
-  perspective: 'Perspectiva',
-  composition: 'Composição',
-  color: 'Cor e luz',
-  painting: 'Pintura digital',
-  reading: 'Leitura',
-  review: 'Revisão',
-  other: 'Outro',
-};
+const focusOptions = [
+  ['drawing', 'Desenho'],
+  ['anatomy', 'Anatomia'],
+  ['perspective', 'Perspectiva'],
+  ['composition', 'Composicao'],
+  ['color', 'Cor e luz'],
+  ['painting', 'Pintura digital'],
+  ['reading', 'Leitura'],
+  ['review', 'Revisao'],
+  ['other', 'Outro'],
+] as const;
+
+const focusAreaLabels = Object.fromEntries(focusOptions) as Record<string, string>;
 
 function todayAsInputDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatActivityDate(activityDate: string | null) {
-  return formatOptionalDate(activityDate);
 }
 
 export function ActivitiesPage() {
@@ -77,10 +85,8 @@ export function ActivitiesPage() {
 
       const matchesStatus =
         statusFilter === 'all' || activity.status === statusFilter;
-
       const matchesFocus =
         focusFilter === 'all' || activity.focusArea === focusFilter;
-
       const matchesEnergy =
         energyFilter === 'all' || activity.energyLevel === energyFilter;
 
@@ -113,7 +119,7 @@ export function ActivitiesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível carregar as atividades.',
+          : 'Nao foi possivel carregar as atividades.',
       );
     } finally {
       setIsLoading(false);
@@ -128,7 +134,7 @@ export function ActivitiesPage() {
     event.preventDefault();
 
     if (!title.trim()) {
-      setErrorMessage('Informe um título para a atividade.');
+      setErrorMessage('Informe um titulo para a atividade.');
       return;
     }
 
@@ -137,12 +143,12 @@ export function ActivitiesPage() {
       : null;
 
     if (parsedDuration !== null && Number.isNaN(parsedDuration)) {
-      setErrorMessage('Informe uma duração válida em minutos.');
+      setErrorMessage('Informe uma duracao valida em minutos.');
       return;
     }
 
     if (parsedDuration !== null && parsedDuration < 0) {
-      setErrorMessage('A duração não pode ser negativa.');
+      setErrorMessage('A duracao nao pode ser negativa.');
       return;
     }
 
@@ -173,371 +179,15 @@ export function ActivitiesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível salvar a atividade.',
+          : 'Nao foi possivel salvar a atividade.',
       );
     } finally {
       setIsSaving(false);
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-accent">Atividades</p>
-
-          <h1 className="text-2xl font-semibold text-foreground">
-            Registre suas práticas
-          </h1>
-
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Cadastre sessões de estudo, práticas artísticas, leituras e revisões.
-            Tudo fica salvo localmente no SQLite do OpenArtDesk.
-          </p>
-        </div>
-      </section>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <section className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-xs text-muted-foreground">Atividades registradas</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">
-            {activities.length}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-xs text-muted-foreground">Concluídas</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">
-            {completedActivities}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-xs text-muted-foreground">Tempo concluído</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground">
-            {formatDuration(totalMinutes)}
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold text-foreground">
-          Adicionar atividade
-        </h2>
-
-        <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm text-foreground">
-            Título
-            <input
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Ex: 30 minutos de gesture drawing"
-            />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              Data
-              <input
-                type="date"
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={activityDate}
-                onChange={(event) => setActivityDate(event.target.value)}
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Duração em minutos
-              <input
-                type="number"
-                min="0"
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={durationMinutes}
-                onChange={(event) => setDurationMinutes(event.target.value)}
-                placeholder="30"
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-2 text-sm text-foreground">
-              Foco
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={focusArea}
-                onChange={(event) => setFocusArea(event.target.value)}
-              >
-                <option value="drawing">Desenho</option>
-                <option value="anatomy">Anatomia</option>
-                <option value="perspective">Perspectiva</option>
-                <option value="composition">Composição</option>
-                <option value="color">Cor e luz</option>
-                <option value="painting">Pintura digital</option>
-                <option value="reading">Leitura</option>
-                <option value="review">Revisão</option>
-                <option value="other">Outro</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Energia
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={energyLevel}
-                onChange={(event) =>
-                  setEnergyLevel(event.target.value as EnergyLevel)
-                }
-              >
-                <option value="low">Baixa</option>
-                <option value="medium">Média</option>
-                <option value="high">Alta</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Status
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as ActivityStatus)
-                }
-              >
-                <option value="planned">Planejada</option>
-                <option value="done">Concluída</option>
-                <option value="skipped">Pulada</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            Observações
-            <textarea
-              className="min-h-24 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Como foi a prática? O que funcionou? O que precisa melhorar?"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-fit rounded-xl border border-border bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? 'Salvando...' : 'Adicionar atividade'}
-          </button>
-
-        </form>
-      </section>
-        
-        <section className="rounded-2xl border border-border bg-surface p-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              Buscar e filtrar atividades
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Refine práticas por texto, status, foco e energia.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-4">
-            <label className="grid gap-2 text-sm text-foreground">
-              Busca
-              <input
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Título ou observações..."
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Status
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as 'all' | ActivityStatus)
-                }
-              >
-                <option value="all">Todos</option>
-                <option value="planned">Planejada</option>
-                <option value="done">Concluída</option>
-                <option value="skipped">Pulada</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Foco
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={focusFilter}
-                onChange={(event) => setFocusFilter(event.target.value)}
-              >
-                <option value="all">Todos</option>
-                <option value="drawing">Desenho</option>
-                <option value="anatomy">Anatomia</option>
-                <option value="perspective">Perspectiva</option>
-                <option value="composition">Composição</option>
-                <option value="color">Cor e luz</option>
-                <option value="painting">Pintura digital</option>
-                <option value="reading">Leitura</option>
-                <option value="review">Revisão</option>
-                <option value="other">Outro</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Energia
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={energyFilter}
-                onChange={(event) =>
-                  setEnergyFilter(event.target.value as 'all' | EnergyLevel)
-                }
-              >
-                <option value="all">Todas</option>
-                <option value="low">Baixa</option>
-                <option value="medium">Média</option>
-                <option value="high">Alta</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <p className="text-sm text-muted-foreground">
-              Mostrando {filteredActivities.length} de {activities.length} atividade(s).
-            </p>
-
-            <button
-              type="button"
-              className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-                setFocusFilter('all');
-                setEnergyFilter('all');
-              }}
-            >
-              Limpar filtros
-            </button>
-          </div>
-        </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Atividades cadastradas
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Histórico inicial das suas práticas e sessões de estudo.
-            </p>
-          </div>
-
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            {activities.length} atividade(s)
-          </span>
-        </div>
-
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">
-            Carregando atividades...
-          </p>
-        ) : activities.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface-elevated p-6">
-            <p className="text-sm font-medium text-foreground">
-              Nenhuma atividade cadastrada ainda.
-            </p>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              Registre sua primeira prática para começar a acompanhar sua rotina.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {activities.map((activity) => (
-              <article
-                key={activity.id}
-                className="rounded-xl border border-border bg-surface-elevated p-4"
-              >
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">
-                      {activity.title}
-                    </h3>
-
-                    <p className="text-xs text-muted-foreground">
-                      {formatActivityDate(activity.activityDate)}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                      {statusLabels[activity.status]}
-                    </span>
-
-                    {activity.focusArea ? (
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        {focusAreaLabels[activity.focusArea] ?? activity.focusArea}
-                      </span>
-                    ) : null}
-
-                    {activity.energyLevel ? (
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        Energia {energyLabels[activity.energyLevel]}
-                      </span>
-                    ) : null}
-
-                    <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                      {formatDuration(activity.durationMinutes)}
-                    </span>
-                  </div>
-
-                  {activity.description ? (
-                    <p className="max-w-2xl text-sm text-muted-foreground">
-                      {activity.description}
-                    </p>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                    onClick={() => handleDeleteActivity(activity)}
-                  >
-                    Excluir
-                  </button>
-
-                  <button
-                    type="button"
-                    className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                    onClick={() => handleEditActivity(activity)}
-                  >
-                    Editar
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-
   async function handleDeleteActivity(activity: Activity) {
-    const confirmed = window.confirm(
-      `Excluir a atividade "${activity.title}"?`,
-    );
+    const confirmed = window.confirm(`Excluir a atividade "${activity.title}"?`);
 
     if (!confirmed) {
       return;
@@ -551,99 +201,369 @@ export function ActivitiesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível excluir a atividade.',
+          : 'Nao foi possivel excluir a atividade.',
       );
     }
   }
 
-async function handleEditActivity(activity: Activity) {
-  const title = window.prompt('Título:', activity.title);
+  async function handleEditActivity(activity: Activity) {
+    const editedTitle = window.prompt('Titulo:', activity.title);
 
-  if (title === null) {
-    return;
-  }
+    if (editedTitle === null) {
+      return;
+    }
 
-  const activityDate = window.prompt(
-    'Data no formato YYYY-MM-DD:',
-    activity.activityDate ?? '',
-  );
+    const editedActivityDate = window.prompt(
+      'Data no formato YYYY-MM-DD:',
+      activity.activityDate ?? '',
+    );
 
-  if (activityDate === null) {
-    return;
-  }
+    if (editedActivityDate === null) {
+      return;
+    }
 
-  const durationText = window.prompt(
-    'Duração em minutos:',
-    activity.durationMinutes?.toString() ?? '',
-  );
+    const durationText = window.prompt(
+      'Duracao em minutos:',
+      activity.durationMinutes?.toString() ?? '',
+    );
 
-  if (durationText === null) {
-    return;
-  }
+    if (durationText === null) {
+      return;
+    }
 
-  const parsedDuration = durationText.trim()
-    ? Number(durationText)
-    : null;
+    const parsedDuration = durationText.trim() ? Number(durationText) : null;
 
-  if (parsedDuration !== null && Number.isNaN(parsedDuration)) {
-    setErrorMessage('Informe uma duração válida em minutos.');
-    return;
-  }
+    if (parsedDuration !== null && Number.isNaN(parsedDuration)) {
+      setErrorMessage('Informe uma duracao valida em minutos.');
+      return;
+    }
 
-  const focusArea = window.prompt('Foco:', activity.focusArea ?? '');
+    const editedFocusArea = window.prompt('Foco:', activity.focusArea ?? '');
 
-  if (focusArea === null) {
-    return;
-  }
+    if (editedFocusArea === null) {
+      return;
+    }
 
-  const energyLevel = window.prompt(
-    'Energia: low, medium ou high',
-    activity.energyLevel ?? 'medium',
-  );
+    const editedEnergyLevel = window.prompt(
+      'Energia: low, medium ou high',
+      activity.energyLevel ?? 'medium',
+    );
 
-  if (energyLevel === null) {
-    return;
-  }
+    if (editedEnergyLevel === null) {
+      return;
+    }
 
-  const status = window.prompt(
-    'Status: planned, done ou skipped',
-    activity.status,
-  );
+    const editedStatus = window.prompt(
+      'Status: planned, done ou skipped',
+      activity.status,
+    );
 
-  if (status === null) {
-    return;
-  }
+    if (editedStatus === null) {
+      return;
+    }
 
-  const description = window.prompt('Observações:', activity.description ?? '');
+    const editedDescription = window.prompt(
+      'Observacoes:',
+      activity.description ?? '',
+    );
 
-  if (description === null) {
-    return;
-  }
+    if (editedDescription === null) {
+      return;
+    }
 
-  try {
-    setErrorMessage(null);
+    try {
+      setErrorMessage(null);
 
-    await updateActivity({
-      id: activity.id,
-      title,
-      activityDate: activityDate.trim() || null,
-      durationMinutes: parsedDuration,
-      focusArea: focusArea.trim() || null,
-      energyLevel: energyLevel.trim()
-        ? (energyLevel as EnergyLevel)
-        : null,
-      status: status as ActivityStatus,
-      description: description.trim() || null,
-    });
+      await updateActivity({
+        id: activity.id,
+        title: editedTitle,
+        activityDate: editedActivityDate.trim() || null,
+        durationMinutes: parsedDuration,
+        focusArea: editedFocusArea.trim() || null,
+        energyLevel: editedEnergyLevel.trim()
+          ? (editedEnergyLevel as EnergyLevel)
+          : null,
+        status: editedStatus as ActivityStatus,
+        description: editedDescription.trim() || null,
+      });
 
-    await loadActivities();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error
-        ? error.message
-        : 'Não foi possível editar a atividade.',
+      await loadActivities();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Nao foi possivel editar a atividade.',
       );
     }
   }
 
+  return (
+    <div className="desktop-page">
+      <PageHero
+        eyebrow="Atividades"
+        title="Acompanhe sua rotina de estudo"
+        description="Registre sessoes de estudo, praticas artisticas, leituras e revisoes. Tudo fica salvo localmente no SQLite do OpenArtDesk."
+        actions={<Badge tone="accent">{activities.length} atividade(s)</Badge>}
+      />
+
+      {errorMessage ? <ErrorMessage>{errorMessage}</ErrorMessage> : null}
+
+      <section className="metric-grid">
+        <MetricCard
+          label="Registradas"
+          value={activities.length}
+          description="Total salvo localmente"
+        />
+        <MetricCard
+          tone="success"
+          label="Concluidas"
+          value={completedActivities}
+          description="Dentro dos filtros atuais"
+        />
+        <MetricCard
+          tone="accent"
+          label="Tempo concluido"
+          value={formatDuration(totalMinutes)}
+          description="Soma das atividades filtradas"
+        />
+      </section>
+
+      <SectionCard
+        title="Adicionar atividade"
+        description="Registre uma pratica, tarefa ou sessao de estudo."
+      >
+        <form className="app-form" onSubmit={handleSubmit}>
+          <Field label="Titulo">
+            <input
+              className="app-input"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Ex: 30 minutos de gesture drawing"
+            />
+          </Field>
+
+          <div className="form-grid-2">
+            <Field label="Data">
+              <input
+                type="date"
+                className="app-input"
+                value={activityDate}
+                onChange={(event) => setActivityDate(event.target.value)}
+              />
+            </Field>
+
+            <Field label="Duracao em minutos">
+              <input
+                type="number"
+                min="0"
+                className="app-input"
+                value={durationMinutes}
+                onChange={(event) => setDurationMinutes(event.target.value)}
+                placeholder="30"
+              />
+            </Field>
+          </div>
+
+          <div className="form-grid-3">
+            <Field label="Foco">
+              <select
+                className="app-select"
+                value={focusArea}
+                onChange={(event) => setFocusArea(event.target.value)}
+              >
+                {focusOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Energia">
+              <select
+                className="app-select"
+                value={energyLevel}
+                onChange={(event) =>
+                  setEnergyLevel(event.target.value as EnergyLevel)
+                }
+              >
+                <option value="low">Baixa</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </Field>
+
+            <Field label="Status">
+              <select
+                className="app-select"
+                value={status}
+                onChange={(event) =>
+                  setStatus(event.target.value as ActivityStatus)
+                }
+              >
+                <option value="planned">Planejada</option>
+                <option value="done">Concluida</option>
+                <option value="skipped">Pulada</option>
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Observacoes">
+            <textarea
+              className="app-textarea"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Como foi a pratica? O que funcionou? O que precisa melhorar?"
+            />
+          </Field>
+
+          <ActionButtonGroup>
+            <Button type="submit" disabled={!canSubmit} variant="primary">
+              {isSaving ? 'Salvando...' : 'Adicionar atividade'}
+            </Button>
+          </ActionButtonGroup>
+        </form>
+      </SectionCard>
+
+      <SectionCard
+        title="Buscar e filtrar atividades"
+        description="Refine praticas por texto, status, foco e energia."
+      >
+        <div className="filter-grid form-grid-4">
+          <Field label="Busca">
+            <input
+              className="app-input"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Titulo ou observacoes..."
+            />
+          </Field>
+
+          <Field label="Status">
+            <select
+              className="app-select"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as 'all' | ActivityStatus)
+              }
+            >
+              <option value="all">Todos</option>
+              <option value="planned">Planejada</option>
+              <option value="done">Concluida</option>
+              <option value="skipped">Pulada</option>
+            </select>
+          </Field>
+
+          <Field label="Foco">
+            <select
+              className="app-select"
+              value={focusFilter}
+              onChange={(event) => setFocusFilter(event.target.value)}
+            >
+              <option value="all">Todos</option>
+              {focusOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Energia">
+            <select
+              className="app-select"
+              value={energyFilter}
+              onChange={(event) =>
+                setEnergyFilter(event.target.value as 'all' | EnergyLevel)
+              }
+            >
+              <option value="all">Todas</option>
+              <option value="low">Baixa</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="filter-footer">
+          <span>
+            Mostrando {filteredActivities.length} de {activities.length} atividade(s).
+          </span>
+          <Button
+            size="sm"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+              setFocusFilter('all');
+              setEnergyFilter('all');
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Atividades cadastradas"
+        description="Historico das suas praticas e sessoes de estudo."
+        actions={<Badge>{filteredActivities.length} atividade(s)</Badge>}
+      >
+        {isLoading ? (
+          <div className="loading-panel">
+            <p>Carregando atividades...</p>
+          </div>
+        ) : filteredActivities.length === 0 ? (
+          <div className="ui-empty-state">
+            <h3>Nenhuma atividade encontrada</h3>
+            <p>Registre sua primeira pratica ou ajuste os filtros atuais.</p>
+          </div>
+        ) : (
+          <div className="entity-list">
+            {filteredActivities.map((activity) => (
+              <article key={activity.id} className="entity-card">
+                <div className="entity-card-layout">
+                  <div className="entity-card-main">
+                    <div>
+                      <h3>{activity.title}</h3>
+                      <p>{formatOptionalDate(activity.activityDate)}</p>
+                    </div>
+
+                    <div className="action-row">
+                      <Badge tone={activity.status === 'done' ? 'success' : 'neutral'}>
+                        {statusLabels[activity.status]}
+                      </Badge>
+                      {activity.focusArea ? (
+                        <Badge>
+                          {focusAreaLabels[activity.focusArea] ?? activity.focusArea}
+                        </Badge>
+                      ) : null}
+                      {activity.energyLevel ? (
+                        <Badge>Energia {energyLabels[activity.energyLevel]}</Badge>
+                      ) : null}
+                      <Badge>{formatDuration(activity.durationMinutes)}</Badge>
+                    </div>
+
+                    {activity.description ? <p>{activity.description}</p> : null}
+                  </div>
+
+                  <div className="entity-card-actions">
+                    <Button size="sm" onClick={() => handleEditActivity(activity)}>
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteActivity(activity)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
 }

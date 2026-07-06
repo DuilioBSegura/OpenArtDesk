@@ -14,7 +14,7 @@ export function Topbar({
   return (
     <header className="topbar">
       <div>
-        <span className="topbar-eyebrow">Sprint 4</span>
+        <span className="topbar-eyebrow">OpenArtDesk local</span>
         <h1>{activeModule.label}</h1>
         {activeModule.description ? (
           <p className="topbar-description">{activeModule.description}</p>

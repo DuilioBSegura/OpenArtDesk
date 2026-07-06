@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PageHeader } from "../ui/PageHeader";
+import { PageHero } from "../ui/Surface";
 
 type PageScaffoldProps = {
   eyebrow: string;
@@ -15,8 +15,8 @@ export function PageScaffold({
   children,
 }: PageScaffoldProps) {
   return (
-    <section className="page-surface">
-      <PageHeader eyebrow={eyebrow} title={title} description={description} />
+    <section className="desktop-page">
+      <PageHero eyebrow={eyebrow} title={title} description={description} />
       {children}
     </section>
   );

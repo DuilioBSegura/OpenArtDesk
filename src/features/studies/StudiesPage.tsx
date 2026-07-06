@@ -1,5 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import {
+  ActionButtonGroup,
+  ErrorMessage,
+  Field,
+  PageHero,
+  SectionCard,
+} from '../../components/ui/Surface';
+import { fileToNumberArray } from '../../shared/utils/file';
 import {
   createStudy,
   deleteStudy,
@@ -8,25 +18,26 @@ import {
   type Study,
   type StudyDifficulty,
 } from './studiesApi';
-import { fileToNumberArray } from '../../shared/utils/file';
 
-const categoryLabels: Record<string, string> = {
-  'drawing-fundamentals': 'Fundamentos do desenho',
-  anatomy: 'Anatomia',
-  perspective: 'Perspectiva',
-  composition: 'Composição',
-  'color-theory': 'Cor e luz',
-  'digital-painting': 'Pintura digital',
-  gesture: 'Gesture drawing',
-  characters: 'Personagens',
-  scenarios: 'Cenários',
-  other: 'Outro',
-};
+const categoryOptions = [
+  ['drawing-fundamentals', 'Fundamentos do desenho'],
+  ['anatomy', 'Anatomia'],
+  ['perspective', 'Perspectiva'],
+  ['composition', 'Composicao'],
+  ['color-theory', 'Cor e luz'],
+  ['digital-painting', 'Pintura digital'],
+  ['gesture', 'Gesture drawing'],
+  ['characters', 'Personagens'],
+  ['scenarios', 'Cenarios'],
+  ['other', 'Outro'],
+] as const;
+
+const categoryLabels = Object.fromEntries(categoryOptions) as Record<string, string>;
 
 const difficultyLabels: Record<StudyDifficulty, string> = {
-  easy: 'Fácil',
-  medium: 'Médio',
-  hard: 'Difícil',
+  easy: 'Facil',
+  medium: 'Medio',
+  hard: 'Dificil',
 };
 
 function isSupportedImage(file: File) {
@@ -71,7 +82,6 @@ export function StudiesPage() {
 
       const matchesCategory =
         categoryFilter === 'all' || study.category === categoryFilter;
-
       const matchesDifficulty =
         difficultyFilter === 'all' || study.difficulty === difficultyFilter;
 
@@ -90,7 +100,7 @@ export function StudiesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível carregar os estudos.',
+          : 'Nao foi possivel carregar os estudos.',
       );
     } finally {
       setIsLoading(false);
@@ -105,7 +115,7 @@ export function StudiesPage() {
     event.preventDefault();
 
     if (!title.trim()) {
-      setErrorMessage('Informe um título para o estudo.');
+      setErrorMessage('Informe um titulo para o estudo.');
       return;
     }
 
@@ -146,312 +156,16 @@ export function StudiesPage() {
       await loadStudies();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível salvar o estudo.',
+        error instanceof Error ? error.message : 'Nao foi possivel salvar o estudo.',
       );
     } finally {
       setIsSaving(false);
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-accent">Estudos</p>
-
-          <h1 className="text-2xl font-semibold text-foreground">
-            Registre sua evolução
-          </h1>
-
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Cadastre estudos, exercícios e práticas visuais. As imagens são
-            copiadas para a pasta local do OpenArtDesk e os metadados ficam no
-            SQLite local.
-          </p>
-        </div>
-      </section>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold text-foreground">
-          Adicionar estudo
-        </h2>
-
-        <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm text-foreground">
-            Título
-            <input
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Ex: Estudo de mãos em perspectiva"
-            />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              Categoria
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              >
-                <option value="drawing-fundamentals">Fundamentos do desenho</option>
-                <option value="anatomy">Anatomia</option>
-                <option value="perspective">Perspectiva</option>
-                <option value="composition">Composição</option>
-                <option value="color-theory">Cor e luz</option>
-                <option value="digital-painting">Pintura digital</option>
-                <option value="gesture">Gesture drawing</option>
-                <option value="characters">Personagens</option>
-                <option value="scenarios">Cenários</option>
-                <option value="other">Outro</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              Dificuldade percebida
-              <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-                value={difficulty}
-                onChange={(event) =>
-                  setDifficulty(event.target.value as StudyDifficulty)
-                }
-              >
-                <option value="easy">Fácil</option>
-                <option value="medium">Médio</option>
-                <option value="hard">Difícil</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            Imagem do estudo opcional
-            <input
-              id="study-image-file"
-              type="file"
-              accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                setSelectedImage(file);
-
-                if (file && !title.trim()) {
-                  setTitle(file.name.replace(/\.(png|jpg|jpeg|webp)$/i, ''));
-                }
-              }}
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            Observações
-            <textarea
-              className="min-h-24 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="O que você estudou? O que percebeu? O que quer melhorar?"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-fit rounded-xl border border-border bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? 'Salvando...' : 'Adicionar estudo'}
-          </button>
-        </form>
-      </section>
-      
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            Buscar e filtrar estudos
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Refine seus estudos por texto, categoria e dificuldade.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="grid gap-2 text-sm text-foreground">
-            Busca
-            <input
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Título ou observações..."
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            Categoria
-            <select
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-            >
-              <option value="all">Todas</option>
-              <option value="drawing-fundamentals">Fundamentos do desenho</option>
-              <option value="anatomy">Anatomia</option>
-              <option value="perspective">Perspectiva</option>
-              <option value="composition">Composição</option>
-              <option value="color-theory">Cor e luz</option>
-              <option value="digital-painting">Pintura digital</option>
-              <option value="gesture">Gesture drawing</option>
-              <option value="characters">Personagens</option>
-              <option value="scenarios">Cenários</option>
-              <option value="other">Outro</option>
-            </select>
-          </label>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            Dificuldade
-            <select
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
-              value={difficultyFilter}
-              onChange={(event) =>
-                setDifficultyFilter(event.target.value as 'all' | StudyDifficulty)
-              }
-            >
-              <option value="all">Todas</option>
-              <option value="easy">Fácil</option>
-              <option value="medium">Médio</option>
-              <option value="hard">Difícil</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {filteredStudies.length} de {studies.length} estudo(s).
-          </p>
-
-          <button
-            type="button"
-            className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-            onClick={() => {
-              setSearchQuery('');
-              setCategoryFilter('all');
-              setDifficultyFilter('all');
-            }}
-          >
-            Limpar filtros
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Estudos cadastrados
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Histórico inicial dos seus estudos salvos localmente.
-            </p>
-          </div>
-
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            {studies.length} estudo(s)
-          </span>
-        </div>
-
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">
-            Carregando estudos...
-          </p>
-        ) : studies.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface-elevated p-6">
-            <p className="text-sm font-medium text-foreground">
-              Nenhum estudo cadastrado ainda.
-            </p>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              Registre seu primeiro estudo para começar a acompanhar sua
-              evolução.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {studies.map((study) => (
-              <article
-                key={study.id}
-                className="rounded-xl border border-border bg-surface-elevated p-4"
-              >
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">
-                      {study.title}
-                    </h3>
-
-                    <p className="text-xs text-muted-foreground">
-                      Criado em {new Date(study.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {study.category ? (
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        {categoryLabels[study.category] ?? study.category}
-                      </span>
-                    ) : null}
-
-                    {study.difficulty ? (
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        {difficultyLabels[study.difficulty]}
-                      </span>
-                    ) : null}
-
-                    {study.imagePath ? (
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        Imagem salva
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {study.description ? (
-                    <p className="max-w-2xl text-sm text-muted-foreground">
-                      {study.description}
-                    </p>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                  onClick={() => handleDeleteStudy(study)}
-                >
-                  Excluir
-                </button>
-
-                <button
-                  type="button"
-                  className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                  onClick={() => handleEditStudy(study)}
-                >
-                  Editar
-                </button> 
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-
   async function handleDeleteStudy(study: Study) {
     const confirmed = window.confirm(
-      `Excluir o estudo "${study.title}"?\n\nSe houver imagem importada, ela também será removida da pasta local do OpenArtDesk.`,
+      `Excluir o estudo "${study.title}"?\n\nSe houver imagem importada, ela tambem sera removida da pasta local do OpenArtDesk.`,
     );
 
     if (!confirmed) {
@@ -464,62 +178,267 @@ export function StudiesPage() {
       await loadStudies();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível excluir o estudo.',
+        error instanceof Error ? error.message : 'Nao foi possivel excluir o estudo.',
       );
     }
   }
 
-async function handleEditStudy(study: Study) {
-  const title = window.prompt('Título:', study.title);
+  async function handleEditStudy(study: Study) {
+    const editedTitle = window.prompt('Titulo:', study.title);
 
-  if (title === null) {
-    return;
+    if (editedTitle === null) {
+      return;
+    }
+
+    const editedCategory = window.prompt('Categoria:', study.category ?? '');
+
+    if (editedCategory === null) {
+      return;
+    }
+
+    const editedDifficulty = window.prompt(
+      'Dificuldade: easy, medium ou hard',
+      study.difficulty ?? 'medium',
+    );
+
+    if (editedDifficulty === null) {
+      return;
+    }
+
+    const editedDescription = window.prompt('Observacoes:', study.description ?? '');
+
+    if (editedDescription === null) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+
+      await updateStudy({
+        id: study.id,
+        title: editedTitle,
+        category: editedCategory.trim() || null,
+        difficulty: editedDifficulty.trim()
+          ? (editedDifficulty as StudyDifficulty)
+          : null,
+        description: editedDescription.trim() || null,
+      });
+
+      await loadStudies();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel editar o estudo.',
+      );
+    }
   }
 
-  const category = window.prompt('Categoria:', study.category ?? '');
+  return (
+    <div className="desktop-page">
+      <PageHero
+        eyebrow="Estudos"
+        title="Registre sua evolucao visual"
+        description="Cadastre estudos, exercicios e praticas visuais. Imagens opcionais sao copiadas para a pasta local e os metadados ficam no SQLite local."
+        actions={<Badge tone="accent">{studies.length} estudo(s)</Badge>}
+      />
 
-  if (category === null) {
-    return;
-  }
+      {errorMessage ? <ErrorMessage>{errorMessage}</ErrorMessage> : null}
 
-  const difficulty = window.prompt(
-    'Dificuldade: easy, medium ou hard',
-    study.difficulty ?? 'medium',
+      <SectionCard
+        title="Adicionar estudo"
+        description="Use este registro como um diario visual da sua pratica."
+      >
+        <form className="app-form" onSubmit={handleSubmit}>
+          <Field label="Titulo">
+            <input
+              className="app-input"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Ex: Estudo de maos em perspectiva"
+            />
+          </Field>
+
+          <div className="form-grid-2">
+            <Field label="Categoria">
+              <select
+                className="app-select"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                {categoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Dificuldade percebida">
+              <select
+                className="app-select"
+                value={difficulty}
+                onChange={(event) =>
+                  setDifficulty(event.target.value as StudyDifficulty)
+                }
+              >
+                <option value="easy">Facil</option>
+                <option value="medium">Medio</option>
+                <option value="hard">Dificil</option>
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Imagem opcional" hint="PNG, JPG, JPEG ou WEBP.">
+            <input
+              id="study-image-file"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+              className="app-file-input"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setSelectedImage(file);
+
+                if (file && !title.trim()) {
+                  setTitle(file.name.replace(/\.(png|jpg|jpeg|webp)$/i, ''));
+                }
+              }}
+            />
+          </Field>
+
+          <Field label="Observacoes">
+            <textarea
+              className="app-textarea"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="O que voce estudou? O que percebeu? O que quer melhorar?"
+            />
+          </Field>
+
+          <ActionButtonGroup>
+            <Button type="submit" disabled={!canSubmit} variant="primary">
+              {isSaving ? 'Salvando...' : 'Adicionar estudo'}
+            </Button>
+          </ActionButtonGroup>
+        </form>
+      </SectionCard>
+
+      <SectionCard
+        title="Buscar e filtrar estudos"
+        description="Refine estudos por texto, categoria e dificuldade."
+      >
+        <div className="filter-grid form-grid-3">
+          <Field label="Busca">
+            <input
+              className="app-input"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Titulo ou observacoes..."
+            />
+          </Field>
+
+          <Field label="Categoria">
+            <select
+              className="app-select"
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+            >
+              <option value="all">Todas</option>
+              {categoryOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Dificuldade">
+            <select
+              className="app-select"
+              value={difficultyFilter}
+              onChange={(event) =>
+                setDifficultyFilter(event.target.value as 'all' | StudyDifficulty)
+              }
+            >
+              <option value="all">Todas</option>
+              <option value="easy">Facil</option>
+              <option value="medium">Medio</option>
+              <option value="hard">Dificil</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="filter-footer">
+          <span>
+            Mostrando {filteredStudies.length} de {studies.length} estudo(s).
+          </span>
+          <Button
+            size="sm"
+            onClick={() => {
+              setSearchQuery('');
+              setCategoryFilter('all');
+              setDifficultyFilter('all');
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Estudos cadastrados"
+        description="Historico dos seus estudos salvos localmente."
+        actions={<Badge>{filteredStudies.length} estudo(s)</Badge>}
+      >
+        {isLoading ? (
+          <div className="loading-panel">
+            <p>Carregando estudos...</p>
+          </div>
+        ) : filteredStudies.length === 0 ? (
+          <div className="ui-empty-state">
+            <h3>Nenhum estudo encontrado</h3>
+            <p>Registre seu primeiro estudo ou ajuste os filtros atuais.</p>
+          </div>
+        ) : (
+          <div className="entity-list">
+            {filteredStudies.map((study) => (
+              <article key={study.id} className="entity-card">
+                <div className="entity-card-layout">
+                  <div className="entity-card-main">
+                    <div>
+                      <h3>{study.title}</h3>
+                      <p>Criado em {new Date(study.createdAt).toLocaleString()}</p>
+                    </div>
+
+                    <div className="action-row">
+                      {study.category ? (
+                        <Badge>{categoryLabels[study.category] ?? study.category}</Badge>
+                      ) : null}
+                      {study.difficulty ? (
+                        <Badge tone="warning">{difficultyLabels[study.difficulty]}</Badge>
+                      ) : null}
+                      {study.imagePath ? <Badge tone="success">Imagem salva</Badge> : null}
+                    </div>
+
+                    {study.description ? <p>{study.description}</p> : null}
+                  </div>
+
+                  <div className="entity-card-actions">
+                    <Button size="sm" onClick={() => handleEditStudy(study)}>
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteStudy(study)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+    </div>
   );
-
-  if (difficulty === null) {
-    return;
-  }
-
-  const description = window.prompt('Observações:', study.description ?? '');
-
-  if (description === null) {
-    return;
-  }
-
-  try {
-    setErrorMessage(null);
-
-    await updateStudy({
-      id: study.id,
-      title,
-      category: category.trim() || null,
-      difficulty: difficulty.trim()
-        ? (difficulty as StudyDifficulty)
-        : null,
-      description: description.trim() || null,
-    });
-
-    await loadStudies();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error
-        ? error.message
-        : 'Não foi possível editar o estudo.',
-      );
-    }
-  }
-
 }

@@ -1,5 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import {
+  ActionButtonGroup,
+  ErrorMessage,
+  Field,
+  PageHero,
+  SectionCard,
+} from '../../components/ui/Surface';
+import { fileToNumberArray } from '../../shared/utils/file';
+import { formatFileSize } from '../../shared/utils/formatters';
 import {
   createLibraryItem,
   deleteLibraryItem,
@@ -9,15 +20,23 @@ import {
   type LibraryItem,
   type LibraryItemStatus,
 } from './libraryApi';
-import { fileToNumberArray } from '../../shared/utils/file';
-import { formatFileSize } from '../../shared/utils/formatters';
 
 const statusLabels: Record<LibraryItemStatus, string> = {
   'to-read': 'Quero ler',
   reading: 'Lendo',
-  completed: 'Concluído',
+  completed: 'Concluido',
   paused: 'Pausado',
 };
+
+const categoryOptions = [
+  ['drawing-fundamentals', 'Fundamentos do desenho'],
+  ['anatomy', 'Anatomia'],
+  ['perspective', 'Perspectiva'],
+  ['composition', 'Composicao'],
+  ['color-theory', 'Cor e luz'],
+  ['digital-painting', 'Pintura digital'],
+  ['other', 'Outro'],
+] as const;
 
 export function LibraryPage() {
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -48,7 +67,6 @@ export function LibraryPage() {
 
       const matchesStatus =
         statusFilter === 'all' || item.status === statusFilter;
-
       const matchesCategory =
         categoryFilter === 'all' || item.category === categoryFilter;
 
@@ -71,7 +89,7 @@ export function LibraryPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível carregar a biblioteca.',
+          : 'Nao foi possivel carregar a biblioteca.',
       );
     } finally {
       setIsLoading(false);
@@ -91,7 +109,7 @@ export function LibraryPage() {
     }
 
     if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Nesta versão, apenas arquivos PDF são aceitos.');
+      setErrorMessage('Nesta versao, apenas arquivos PDF sao aceitos.');
       return;
     }
 
@@ -130,7 +148,7 @@ export function LibraryPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível adicionar o PDF à biblioteca.',
+          : 'Nao foi possivel adicionar o PDF a biblioteca.',
       );
     } finally {
       setIsSaving(false);
@@ -143,87 +161,143 @@ export function LibraryPage() {
       await openLibraryItemFile(itemId);
     } catch (error) {
       setErrorMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel abrir o PDF.',
+      );
+    }
+  }
+
+  async function handleDeleteItem(item: LibraryItem) {
+    const confirmed = window.confirm(
+      `Excluir "${item.title}" da biblioteca?\n\nO PDF importado tambem sera removido da pasta local do OpenArtDesk.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      await deleteLibraryItem(item.id);
+      await loadItems();
+    } catch (error) {
+      setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível abrir o PDF.',
+          : 'Nao foi possivel excluir o item da biblioteca.',
+      );
+    }
+  }
+
+  async function handleEditItem(item: LibraryItem) {
+    const editedTitle = window.prompt('Titulo:', item.title);
+
+    if (editedTitle === null) {
+      return;
+    }
+
+    const editedAuthor = window.prompt('Autor:', item.author ?? '');
+
+    if (editedAuthor === null) {
+      return;
+    }
+
+    const editedCategory = window.prompt('Categoria:', item.category ?? '');
+
+    if (editedCategory === null) {
+      return;
+    }
+
+    const editedStatus = window.prompt(
+      'Status: to-read, reading, completed ou paused',
+      item.status,
+    );
+
+    if (editedStatus === null) {
+      return;
+    }
+
+    const editedDescription = window.prompt('Observacoes:', item.description ?? '');
+
+    if (editedDescription === null) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+
+      await updateLibraryItem({
+        id: item.id,
+        title: editedTitle,
+        author: editedAuthor.trim() || null,
+        category: editedCategory.trim() || null,
+        status: editedStatus as LibraryItemStatus,
+        description: editedDescription.trim() || null,
+      });
+
+      await loadItems();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Nao foi possivel editar o item da biblioteca.',
       );
     }
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-accent">Minha Biblioteca</p>
+    <div className="desktop-page">
+      <PageHero
+        eyebrow="Minha Biblioteca"
+        title="Organize seus PDFs locais"
+        description="Cadastre PDFs importantes para seus estudos. O arquivo e copiado para a pasta local do OpenArtDesk e os metadados ficam no SQLite local."
+        actions={<Badge tone="accent">{items.length} material(is)</Badge>}
+      />
 
-          <h1 className="text-2xl font-semibold text-foreground">
-            Organize seus PDFs locais
-          </h1>
+      {errorMessage ? <ErrorMessage>{errorMessage}</ErrorMessage> : null}
 
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Cadastre PDFs importantes para seus estudos. O arquivo será copiado
-            para a pasta local do OpenArtDesk e os metadados serão salvos no
-            SQLite local.
-          </p>
-        </div>
-      </section>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold text-foreground">
-          Adicionar PDF
-        </h2>
-
-        <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              Título
+      <SectionCard
+        title="Adicionar PDF"
+        description="Inclua materiais que voce quer ler, revisar ou concluir."
+      >
+        <form className="app-form" onSubmit={handleSubmit}>
+          <div className="form-grid-2">
+            <Field label="Titulo">
               <input
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                className="app-input"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="Ex: Figure Drawing for All It's Worth"
               />
-            </label>
+            </Field>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              Autor
+            <Field label="Autor">
               <input
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                className="app-input"
                 value={author}
                 onChange={(event) => setAuthor(event.target.value)}
                 placeholder="Ex: Andrew Loomis"
               />
-            </label>
+            </Field>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              Categoria
+          <div className="form-grid-2">
+            <Field label="Categoria">
               <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                className="app-select"
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
               >
-                <option value="drawing-fundamentals">Fundamentos do desenho</option>
-                <option value="anatomy">Anatomia</option>
-                <option value="perspective">Perspectiva</option>
-                <option value="composition">Composição</option>
-                <option value="color-theory">Cor e luz</option>
-                <option value="digital-painting">Pintura digital</option>
-                <option value="other">Outro</option>
+                {categoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              Status
+            <Field label="Status">
               <select
-                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                className="app-select"
                 value={status}
                 onChange={(event) =>
                   setStatus(event.target.value as LibraryItemStatus)
@@ -231,19 +305,18 @@ export function LibraryPage() {
               >
                 <option value="to-read">Quero ler</option>
                 <option value="reading">Lendo</option>
-                <option value="completed">Concluído</option>
+                <option value="completed">Concluido</option>
                 <option value="paused">Pausado</option>
               </select>
-            </label>
+            </Field>
           </div>
 
-          <label className="grid gap-2 text-sm text-foreground">
-            PDF local
+          <Field label="PDF local" hint="Somente arquivos PDF nesta versao.">
             <input
               id="library-pdf-file"
               type="file"
               accept="application/pdf,.pdf"
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              className="app-file-input"
               onChange={(event) => {
                 const file = event.target.files?.[0] ?? null;
                 setSelectedFile(file);
@@ -253,54 +326,42 @@ export function LibraryPage() {
                 }
               }}
             />
-          </label>
+          </Field>
 
-          <label className="grid gap-2 text-sm text-foreground">
-            Observações
+          <Field label="Observacoes">
             <textarea
-              className="min-h-24 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              className="app-textarea"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Por que esse material é importante? O que você quer estudar nele?"
+              placeholder="Por que esse material e importante? O que voce quer estudar nele?"
             />
-          </label>
+          </Field>
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-fit rounded-xl border border-border bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? 'Salvando...' : 'Adicionar à biblioteca'}
-          </button>
+          <ActionButtonGroup>
+            <Button type="submit" disabled={!canSubmit} variant="primary">
+              {isSaving ? 'Salvando...' : 'Adicionar a biblioteca'}
+            </Button>
+          </ActionButtonGroup>
         </form>
-      </section>
+      </SectionCard>
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            Buscar e filtrar biblioteca
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Refine seus PDFs por texto, status e categoria.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="grid gap-2 text-sm text-foreground">
-            Busca
+      <SectionCard
+        title="Buscar e filtrar biblioteca"
+        description="Refine seus PDFs por texto, status e categoria."
+      >
+        <div className="filter-grid form-grid-3">
+          <Field label="Busca">
             <input
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              className="app-input"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Título, autor ou arquivo..."
+              placeholder="Titulo, autor ou arquivo..."
             />
-          </label>
+          </Field>
 
-          <label className="grid gap-2 text-sm text-foreground">
-            Status
+          <Field label="Status">
             <select
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              className="app-select"
               value={statusFilter}
               onChange={(event) =>
                 setStatusFilter(event.target.value as 'all' | LibraryItemStatus)
@@ -309,38 +370,34 @@ export function LibraryPage() {
               <option value="all">Todos</option>
               <option value="to-read">Quero ler</option>
               <option value="reading">Lendo</option>
-              <option value="completed">Concluído</option>
+              <option value="completed">Concluido</option>
               <option value="paused">Pausado</option>
             </select>
-          </label>
+          </Field>
 
-          <label className="grid gap-2 text-sm text-foreground">
-            Categoria
+          <Field label="Categoria">
             <select
-              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              className="app-select"
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
             >
               <option value="all">Todas</option>
-              <option value="drawing-fundamentals">Fundamentos do desenho</option>
-              <option value="anatomy">Anatomia</option>
-              <option value="perspective">Perspectiva</option>
-              <option value="composition">Composição</option>
-              <option value="color-theory">Cor e luz</option>
-              <option value="digital-painting">Pintura digital</option>
-              <option value="other">Outro</option>
+              {categoryOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
-          </label>
+          </Field>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <p className="text-sm text-muted-foreground">
+        <div className="filter-footer">
+          <span>
             Mostrando {filteredItems.length} de {items.length} item(ns).
-          </p>
-
-          <button
+          </span>
+          <Button
             type="button"
-            className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+            size="sm"
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('all');
@@ -348,197 +405,70 @@ export function LibraryPage() {
             }}
           >
             Limpar filtros
-          </button>
+          </Button>
         </div>
-      </section>
+      </SectionCard>
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              PDFs cadastrados
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Materiais salvos localmente no OpenArtDesk.
-            </p>
-          </div>
-
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            {filteredItems.length} item(ns)
-          </span>
-        </div>
-
+      <SectionCard
+        title="PDFs cadastrados"
+        description="Materiais salvos localmente no OpenArtDesk."
+        actions={<Badge>{filteredItems.length} item(ns)</Badge>}
+      >
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">
-            Carregando biblioteca...
-          </p>
+          <div className="loading-panel">
+            <p>Carregando biblioteca...</p>
+          </div>
         ) : filteredItems.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface-elevated p-6">
-            <p className="text-sm font-medium text-foreground">
-              Nenhum PDF cadastrado ainda.
-            </p>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adicione seu primeiro material para começar a montar sua biblioteca
-              local.
-            </p>
+          <div className="ui-empty-state">
+            <h3>Sua biblioteca ainda esta vazia</h3>
+            <p>Adicione seu primeiro material para montar uma biblioteca local.</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="entity-list">
             {filteredItems.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-xl border border-border bg-surface-elevated p-4"
-              >
-                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                  <div className="space-y-2">
+              <article key={item.id} className="entity-card">
+                <div className="entity-card-layout">
+                  <div className="entity-card-main">
                     <div>
-                      <h3 className="text-base font-semibold text-foreground">
-                        {item.title}
-                      </h3>
-
-                      <p className="text-sm text-muted-foreground">
-                        {item.author || 'Autor não informado'}
-                      </p>
+                      <h3>{item.title}</h3>
+                      <p>{item.author || 'Autor nao informado'}</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
+                    <div className="action-row">
+                      <Badge tone={item.status === 'completed' ? 'success' : 'neutral'}>
                         {statusLabels[item.status]}
-                      </span>
-
-                      {item.category ? (
-                        <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                          {item.category}
-                        </span>
-                      ) : null}
-
-                      <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-                        {formatFileSize(item.fileSize)}
-                      </span>
+                      </Badge>
+                      {item.category ? <Badge>{item.category}</Badge> : null}
+                      <Badge>{formatFileSize(item.fileSize)}</Badge>
                     </div>
 
-                    {item.description ? (
-                      <p className="max-w-2xl text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                    ) : null}
-
+                    {item.description ? <p>{item.description}</p> : null}
                     {item.originalFileName ? (
-                      <p className="text-xs text-muted-foreground">
-                        Arquivo original: {item.originalFileName}
-                      </p>
+                      <p>Arquivo original: {item.originalFileName}</p>
                     ) : null}
                   </div>
 
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                    onClick={() => handleOpenFile(item.id)}
-                  >
-                    Abrir PDF
-                  </button>
-
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                    onClick={() => handleDeleteItem(item)}
-                  >
-                    Excluir
-                  </button>
-
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
-                    onClick={() => handleEditItem(item)}
-                  >
-                    Editar
-                  </button>
+                  <div className="entity-card-actions">
+                    <Button size="sm" onClick={() => handleOpenFile(item.id)}>
+                      Abrir PDF
+                    </Button>
+                    <Button size="sm" onClick={() => handleEditItem(item)}>
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteItem(item)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
                 </div>
               </article>
             ))}
           </div>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
-
-  async function handleDeleteItem(item: LibraryItem) {
-  const confirmed = window.confirm(
-    `Excluir "${item.title}" da biblioteca?\n\nO PDF importado também será removido da pasta local do OpenArtDesk.`,
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    setErrorMessage(null);
-    await deleteLibraryItem(item.id);
-    await loadItems();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error
-        ? error.message
-        : 'Não foi possível excluir o item da biblioteca.',
-    );
-    }
-  }
-
-async function handleEditItem(item: LibraryItem) {
-  const title = window.prompt('Título:', item.title);
-
-  if (title === null) {
-    return;
-  }
-
-  const author = window.prompt('Autor:', item.author ?? '');
-
-  if (author === null) {
-    return;
-  }
-
-  const category = window.prompt('Categoria:', item.category ?? '');
-
-  if (category === null) {
-    return;
-  }
-
-  const status = window.prompt(
-    'Status: to-read, reading, completed ou paused',
-    item.status,
-  );
-
-  if (status === null) {
-    return;
-  }
-
-  const description = window.prompt('Observações:', item.description ?? '');
-
-  if (description === null) {
-    return;
-  }
-
-  try {
-    setErrorMessage(null);
-
-    await updateLibraryItem({
-      id: item.id,
-      title,
-      author: author.trim() || null,
-      category: category.trim() || null,
-      status: status as LibraryItemStatus,
-      description: description.trim() || null,
-    });
-
-    await loadItems();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error
-        ? error.message
-        : 'Não foi possível editar o item da biblioteca.',
-      );
-    }
-  }
 }

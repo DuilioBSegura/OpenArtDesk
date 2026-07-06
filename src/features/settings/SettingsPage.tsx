@@ -7,7 +7,7 @@ export function SettingsPage() {
       title="Configuracoes"
       description="Placeholder para preferencias e ajustes locais futuros."
       items={[
-        "Sem persistencia de configuracoes nesta sprint.",
+        "Preferencias visuais ja ficam na pagina Customizacao.",
         "Sem permissoes novas.",
         "Sem integracoes online.",
       ]}

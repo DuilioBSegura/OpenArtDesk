@@ -43,6 +43,12 @@ export function Sidebar({ activeModuleId, routes, onNavigate }: SidebarProps) {
           );
         })}
       </nav>
+
+      <div className="sidebar-footer" aria-label="Estado local do aplicativo">
+        <strong>v0.1.0 MVP</strong>
+        <span>Offline-first</span>
+        <span>Dados no seu computador</span>
+      </div>
     </aside>
   );
 }

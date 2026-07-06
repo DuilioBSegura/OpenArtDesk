@@ -1,11 +1,18 @@
 import { useState } from 'react';
 
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import {
+  ErrorMessage,
+  MetricCard,
+  SectionCard,
+} from '../../components/ui/Surface';
+import { formatFileSize } from '../../shared/utils/formatters';
 import {
   createFullBackup,
   openBackupsFolder,
   type BackupResult,
 } from './backupApi';
-import { formatFileSize } from '../../shared/utils/formatters';
 
 export function BackupPanel() {
   const [lastBackup, setLastBackup] = useState<BackupResult | null>(null);
@@ -23,7 +30,7 @@ export function BackupPanel() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível criar o backup completo.',
+          : 'Nao foi possivel criar o backup completo.',
       );
     } finally {
       setIsCreatingBackup(false);
@@ -38,97 +45,56 @@ export function BackupPanel() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Não foi possível abrir a pasta de backups.',
+          : 'Nao foi possivel abrir a pasta de backups.',
       );
     }
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-6">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">
-            Backup completo local
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Gere um arquivo .zip com banco SQLite, preferências locais e arquivos
-            gerenciados pelo OpenArtDesk.
-          </p>
-        </div>
-
-        <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-          Sprint 08
-        </span>
-      </div>
-
-      <div className="rounded-xl border border-border bg-surface-elevated p-4">
-        <p className="text-sm font-medium text-foreground">
-          O que entra no backup?
-        </p>
-
-        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
-          <li>Banco SQLite local com metadados.</li>
-          <li>Arquivo local de preferências.</li>
-          <li>PDFs importados para a Biblioteca.</li>
-          <li>Capas, imagens, brushes e imports gerenciados pelo app.</li>
-        </ul>
-
-        <p className="mt-3 text-xs text-muted-foreground">
-          A pasta de backups e arquivos temporários não são incluídos para evitar
-          backups recursivos.
+    <SectionCard
+      title="Backup completo local"
+      description="Gere um arquivo .zip com banco SQLite, preferencias locais e arquivos gerenciados pelo OpenArtDesk."
+      actions={<Badge>Sprint 08</Badge>}
+    >
+      <div className="data-tile">
+        <span>O que entra no backup</span>
+        <strong>SQLite, preferences.json, PDFs importados, imagens e arquivos internos.</strong>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Backups existentes e arquivos temporarios ficam fora do pacote para evitar copia recursiva.
         </p>
       </div>
 
-      {errorMessage ? (
-        <div className="mt-4 rounded-xl border border-border bg-surface-elevated p-4 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
+      {errorMessage ? <ErrorMessage>{errorMessage}</ErrorMessage> : null}
 
       {lastBackup ? (
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-border bg-surface-elevated p-4">
-            <p className="text-xs text-muted-foreground">Arquivo</p>
-            <p className="mt-1 break-all text-sm font-medium text-foreground">
-              {lastBackup.backupFileName}
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-border bg-surface-elevated p-4">
-            <p className="text-xs text-muted-foreground">Itens incluídos</p>
-            <p className="mt-1 text-sm font-medium text-foreground">
-              {lastBackup.includedFilesCount}
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-border bg-surface-elevated p-4">
-            <p className="text-xs text-muted-foreground">Tamanho</p>
-            <p className="mt-1 text-sm font-medium text-foreground">
-              {formatFileSize(lastBackup.sizeBytes, { useKbBelowMb: true })}
-            </p>
-          </div>
+        <div className="metric-grid mt-4">
+          <MetricCard label="Arquivo" value={lastBackup.backupFileName} />
+          <MetricCard
+            label="Itens incluidos"
+            value={lastBackup.includedFilesCount}
+          />
+          <MetricCard
+            tone="success"
+            label="Tamanho"
+            value={formatFileSize(lastBackup.sizeBytes, { useKbBelowMb: true })}
+          />
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
+      <div className="action-button-group mt-4">
+        <Button
           type="button"
           onClick={handleCreateBackup}
           disabled={isCreatingBackup}
-          className="rounded-xl border border-border bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          variant="primary"
         >
           {isCreatingBackup ? 'Criando backup...' : 'Criar backup completo'}
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          onClick={handleOpenBackupsFolder}
-          className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground"
-        >
+        <Button type="button" onClick={handleOpenBackupsFolder}>
           Abrir pasta de backups
-        </button>
+        </Button>
       </div>
-    </section>
+    </SectionCard>
   );
 }
