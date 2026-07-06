@@ -234,3 +234,69 @@ pub fn delete_reference(app: tauri::AppHandle, reference_id: String) -> Result<(
 
     Ok(())
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateReferenceInput {
+    pub id: String,
+    pub title: String,
+    pub url: Option<String>,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub status: String,
+}
+
+#[tauri::command]
+pub fn update_reference(
+    app: tauri::AppHandle,
+    input: UpdateReferenceInput,
+) -> Result<ReferenceItem, String> {
+    if input.title.trim().is_empty() {
+        return Err("Title is required.".to_string());
+    }
+
+    let normalized_url = match input.url.as_deref() {
+        Some(url) if !url.trim().is_empty() => {
+            if !is_valid_url(url) {
+                return Err("URL is invalid.".to_string());
+            }
+
+            Some(normalize_url(url))
+        }
+        _ => None,
+    };
+
+    let now = now_string();
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            r#"
+            UPDATE reference_items
+            SET
+              title = ?1,
+              url = ?2,
+              description = ?3,
+              category = ?4,
+              status = ?5,
+              updated_at = ?6
+            WHERE id = ?7
+            "#,
+            params![
+                input.title.trim(),
+                normalized_url.as_deref(),
+                input.description.as_deref(),
+                input.category.as_deref(),
+                input.status,
+                now,
+                input.id,
+            ],
+        )
+        .map_err(|error| format!("Could not update reference: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Reference was not found.".to_string());
+    }
+
+    get_reference_by_id(&app, &input.id)
+}

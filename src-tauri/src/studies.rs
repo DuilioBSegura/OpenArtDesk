@@ -262,3 +262,52 @@ pub fn delete_study(app: tauri::AppHandle, study_id: String) -> Result<(), Strin
 
     Ok(())
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateStudyInput {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub difficulty: Option<String>,
+}
+
+#[tauri::command]
+pub fn update_study(app: tauri::AppHandle, input: UpdateStudyInput) -> Result<Study, String> {
+    if input.title.trim().is_empty() {
+        return Err("Title is required.".to_string());
+    }
+
+    let now = now_string();
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            r#"
+            UPDATE studies
+            SET
+              title = ?1,
+              description = ?2,
+              category = ?3,
+              difficulty = ?4,
+              updated_at = ?5
+            WHERE id = ?6
+            "#,
+            params![
+                input.title.trim(),
+                input.description.as_deref(),
+                input.category.as_deref(),
+                input.difficulty.as_deref(),
+                now,
+                input.id,
+            ],
+        )
+        .map_err(|error| format!("Could not update study: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Study was not found.".to_string());
+    }
+
+    get_study_by_id(&app, &input.id)
+}

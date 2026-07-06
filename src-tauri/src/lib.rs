@@ -42,6 +42,10 @@ pub fn run() {
             studies::delete_study,
             activities::delete_activity,
             references::delete_reference,
+            library::update_library_item,
+            studies::update_study,
+            activities::update_activity,
+            references::update_reference,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

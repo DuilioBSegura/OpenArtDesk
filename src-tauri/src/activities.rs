@@ -214,3 +214,70 @@ pub fn delete_activity(app: tauri::AppHandle, activity_id: String) -> Result<(),
 
     Ok(())
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateActivityInput {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub activity_date: Option<String>,
+    pub duration_minutes: Option<i64>,
+    pub focus_area: Option<String>,
+    pub energy_level: Option<String>,
+    pub status: String,
+}
+
+#[tauri::command]
+pub fn update_activity(
+    app: tauri::AppHandle,
+    input: UpdateActivityInput,
+) -> Result<Activity, String> {
+    if input.title.trim().is_empty() {
+        return Err("Title is required.".to_string());
+    }
+
+    if let Some(duration_minutes) = input.duration_minutes {
+        if duration_minutes < 0 {
+            return Err("Duration cannot be negative.".to_string());
+        }
+    }
+
+    let now = now_string();
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            r#"
+            UPDATE activities
+            SET
+              title = ?1,
+              description = ?2,
+              activity_date = ?3,
+              duration_minutes = ?4,
+              focus_area = ?5,
+              energy_level = ?6,
+              status = ?7,
+              updated_at = ?8
+            WHERE id = ?9
+            "#,
+            params![
+                input.title.trim(),
+                input.description.as_deref(),
+                input.activity_date.as_deref(),
+                input.duration_minutes,
+                input.focus_area.as_deref(),
+                input.energy_level.as_deref(),
+                input.status,
+                now,
+                input.id,
+            ],
+        )
+        .map_err(|error| format!("Could not update activity: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Activity was not found.".to_string());
+    }
+
+    get_activity_by_id(&app, &input.id)
+}

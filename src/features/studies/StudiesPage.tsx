@@ -4,6 +4,7 @@ import {
   createStudy,
   deleteStudy,
   listStudies,
+  updateStudy,
   type Study,
   type StudyDifficulty,
 } from './studiesApi';
@@ -335,6 +336,14 @@ export function StudiesPage() {
                 >
                   Excluir
                 </button>
+
+                <button
+                  type="button"
+                  className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                  onClick={() => handleEditStudy(study)}
+                >
+                  Editar
+                </button> 
               </article>
             ))}
           </div>
@@ -364,4 +373,56 @@ export function StudiesPage() {
       );
     }
   }
+
+async function handleEditStudy(study: Study) {
+  const title = window.prompt('Título:', study.title);
+
+  if (title === null) {
+    return;
+  }
+
+  const category = window.prompt('Categoria:', study.category ?? '');
+
+  if (category === null) {
+    return;
+  }
+
+  const difficulty = window.prompt(
+    'Dificuldade: easy, medium ou hard',
+    study.difficulty ?? 'medium',
+  );
+
+  if (difficulty === null) {
+    return;
+  }
+
+  const description = window.prompt('Observações:', study.description ?? '');
+
+  if (description === null) {
+    return;
+  }
+
+  try {
+    setErrorMessage(null);
+
+    await updateStudy({
+      id: study.id,
+      title,
+      category: category.trim() || null,
+      difficulty: difficulty.trim()
+        ? (difficulty as StudyDifficulty)
+        : null,
+      description: description.trim() || null,
+    });
+
+    await loadStudies();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível editar o estudo.',
+      );
+    }
+  }
+
 }

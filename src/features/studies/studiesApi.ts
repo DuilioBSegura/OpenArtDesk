@@ -37,3 +37,17 @@ export async function deleteStudy(studyId: string): Promise<void> {
     studyId,
   });
 }
+
+export type UpdateStudyInput = {
+  id: string;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  difficulty?: StudyDifficulty | null;
+};
+
+export async function updateStudy(input: UpdateStudyInput): Promise<Study> {
+  return invoke<Study>('update_study', {
+    input,
+  });
+}

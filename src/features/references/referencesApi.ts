@@ -44,3 +44,20 @@ export async function deleteReference(referenceId: string): Promise<void> {
     referenceId,
   });
 }
+
+export type UpdateReferenceInput = {
+  id: string;
+  title: string;
+  url?: string | null;
+  description?: string | null;
+  category?: string | null;
+  status: ReferenceStatus;
+};
+
+export async function updateReference(
+  input: UpdateReferenceInput,
+): Promise<ReferenceItem> {
+  return invoke<ReferenceItem>('update_reference', {
+    input,
+  });
+}

@@ -52,3 +52,20 @@ export async function deleteLibraryItem(itemId: string): Promise<void> {
     itemId,
   });
 }
+
+export type UpdateLibraryItemInput = {
+  id: string;
+  title: string;
+  author?: string | null;
+  description?: string | null;
+  category?: string | null;
+  status: LibraryItemStatus;
+};
+
+export async function updateLibraryItem(
+  input: UpdateLibraryItemInput,
+): Promise<LibraryItem> {
+  return invoke<LibraryItem>('update_library_item', {
+    input,
+  });
+}

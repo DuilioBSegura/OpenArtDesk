@@ -44,3 +44,22 @@ export async function deleteActivity(activityId: string): Promise<void> {
     activityId,
   });
 }
+
+export type UpdateActivityInput = {
+  id: string;
+  title: string;
+  description?: string | null;
+  activityDate?: string | null;
+  durationMinutes?: number | null;
+  focusArea?: string | null;
+  energyLevel?: EnergyLevel | null;
+  status: ActivityStatus;
+};
+
+export async function updateActivity(
+  input: UpdateActivityInput,
+): Promise<Activity> {
+  return invoke<Activity>('update_activity', {
+    input,
+  });
+}

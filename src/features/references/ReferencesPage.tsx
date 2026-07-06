@@ -5,6 +5,7 @@ import {
   deleteReference,
   listReferences,
   openReferenceUrl,
+  updateReference,
   type ReferenceItem,
   type ReferenceStatus,
 } from './referencesApi';
@@ -359,6 +360,14 @@ export function ReferencesPage() {
                     >
                       Excluir
                     </button>
+
+                    <button
+                      type="button"
+                      className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                      onClick={() => handleEditReference(reference)}
+                    >
+                      Editar
+                    </button>
                   </div>
                 </div>
               </article>
@@ -389,4 +398,61 @@ export function ReferencesPage() {
       );
     }
   }
+
+async function handleEditReference(reference: ReferenceItem) {
+  const title = window.prompt('Título:', reference.title);
+
+  if (title === null) {
+    return;
+  }
+
+  const url = window.prompt('URL:', reference.url ?? '');
+
+  if (url === null) {
+    return;
+  }
+
+  const category = window.prompt('Categoria:', reference.category ?? '');
+
+  if (category === null) {
+    return;
+  }
+
+  const status = window.prompt(
+    'Status: to-study, studying, completed ou archived',
+    reference.status,
+  );
+
+  if (status === null) {
+    return;
+  }
+
+  const description = window.prompt('Observações:', reference.description ?? '');
+
+  if (description === null) {
+    return;
+  }
+
+  try {
+    setErrorMessage(null);
+
+    await updateReference({
+      id: reference.id,
+      title,
+      url: url.trim() || null,
+      category: category.trim() || null,
+      status: status as ReferenceStatus,
+      description: description.trim() || null,
+    });
+
+    await loadReferences();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível editar a referência.',
+      );
+    }
+  }
+
 }

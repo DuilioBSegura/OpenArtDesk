@@ -5,6 +5,7 @@ import {
   deleteLibraryItem,
   listLibraryItems,
   openLibraryItemFile,
+  updateLibraryItem,
   type LibraryItem,
   type LibraryItemStatus,
 } from './libraryApi';
@@ -359,6 +360,14 @@ export function LibraryPage() {
                   >
                     Excluir
                   </button>
+
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                    onClick={() => handleEditItem(item)}
+                  >
+                    Editar
+                  </button>
                 </div>
               </article>
             ))}
@@ -387,7 +396,62 @@ export function LibraryPage() {
         ? error.message
         : 'Não foi possível excluir o item da biblioteca.',
     );
+    }
   }
-}
 
+async function handleEditItem(item: LibraryItem) {
+  const title = window.prompt('Título:', item.title);
+
+  if (title === null) {
+    return;
+  }
+
+  const author = window.prompt('Autor:', item.author ?? '');
+
+  if (author === null) {
+    return;
+  }
+
+  const category = window.prompt('Categoria:', item.category ?? '');
+
+  if (category === null) {
+    return;
+  }
+
+  const status = window.prompt(
+    'Status: to-read, reading, completed ou paused',
+    item.status,
+  );
+
+  if (status === null) {
+    return;
+  }
+
+  const description = window.prompt('Observações:', item.description ?? '');
+
+  if (description === null) {
+    return;
+  }
+
+  try {
+    setErrorMessage(null);
+
+    await updateLibraryItem({
+      id: item.id,
+      title,
+      author: author.trim() || null,
+      category: category.trim() || null,
+      status: status as LibraryItemStatus,
+      description: description.trim() || null,
+    });
+
+    await loadItems();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível editar o item da biblioteca.',
+      );
+    }
+  }
 }

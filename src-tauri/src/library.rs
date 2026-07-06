@@ -307,3 +307,58 @@ pub fn delete_library_item(app: tauri::AppHandle, item_id: String) -> Result<(),
 
     Ok(())
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateLibraryItemInput {
+    pub id: String,
+    pub title: String,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub status: String,
+}
+
+#[tauri::command]
+pub fn update_library_item(
+    app: tauri::AppHandle,
+    input: UpdateLibraryItemInput,
+) -> Result<LibraryItem, String> {
+    if input.title.trim().is_empty() {
+        return Err("Title is required.".to_string());
+    }
+
+    let now = now_string();
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            r#"
+            UPDATE library_items
+            SET
+              title = ?1,
+              author = ?2,
+              description = ?3,
+              category = ?4,
+              status = ?5,
+              updated_at = ?6
+            WHERE id = ?7
+            "#,
+            params![
+                input.title.trim(),
+                input.author.as_deref(),
+                input.description.as_deref(),
+                input.category.as_deref(),
+                input.status,
+                now,
+                input.id,
+            ],
+        )
+        .map_err(|error| format!("Could not update library item: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Library item was not found.".to_string());
+    }
+
+    get_library_item_by_id(&app, &input.id)
+}

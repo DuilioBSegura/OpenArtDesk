@@ -4,6 +4,7 @@ import {
   createActivity,
   deleteActivity,
   listActivities,
+  updateActivity,
   type Activity,
   type ActivityStatus,
   type EnergyLevel,
@@ -416,6 +417,14 @@ export function ActivitiesPage() {
                   >
                     Excluir
                   </button>
+
+                  <button
+                    type="button"
+                    className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                    onClick={() => handleEditActivity(activity)}
+                  >
+                    Editar
+                  </button>
                 </div>
               </article>
             ))}
@@ -446,4 +455,95 @@ export function ActivitiesPage() {
       );
     }
   }
+
+async function handleEditActivity(activity: Activity) {
+  const title = window.prompt('Título:', activity.title);
+
+  if (title === null) {
+    return;
+  }
+
+  const activityDate = window.prompt(
+    'Data no formato YYYY-MM-DD:',
+    activity.activityDate ?? '',
+  );
+
+  if (activityDate === null) {
+    return;
+  }
+
+  const durationText = window.prompt(
+    'Duração em minutos:',
+    activity.durationMinutes?.toString() ?? '',
+  );
+
+  if (durationText === null) {
+    return;
+  }
+
+  const parsedDuration = durationText.trim()
+    ? Number(durationText)
+    : null;
+
+  if (parsedDuration !== null && Number.isNaN(parsedDuration)) {
+    setErrorMessage('Informe uma duração válida em minutos.');
+    return;
+  }
+
+  const focusArea = window.prompt('Foco:', activity.focusArea ?? '');
+
+  if (focusArea === null) {
+    return;
+  }
+
+  const energyLevel = window.prompt(
+    'Energia: low, medium ou high',
+    activity.energyLevel ?? 'medium',
+  );
+
+  if (energyLevel === null) {
+    return;
+  }
+
+  const status = window.prompt(
+    'Status: planned, done ou skipped',
+    activity.status,
+  );
+
+  if (status === null) {
+    return;
+  }
+
+  const description = window.prompt('Observações:', activity.description ?? '');
+
+  if (description === null) {
+    return;
+  }
+
+  try {
+    setErrorMessage(null);
+
+    await updateActivity({
+      id: activity.id,
+      title,
+      activityDate: activityDate.trim() || null,
+      durationMinutes: parsedDuration,
+      focusArea: focusArea.trim() || null,
+      energyLevel: energyLevel.trim()
+        ? (energyLevel as EnergyLevel)
+        : null,
+      status: status as ActivityStatus,
+      description: description.trim() || null,
+    });
+
+    await loadActivities();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível editar a atividade.',
+      );
+    }
+  }
+
 }
