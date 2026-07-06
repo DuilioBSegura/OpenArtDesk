@@ -196,3 +196,21 @@ pub fn list_activities(app: tauri::AppHandle) -> Result<Vec<Activity>, String> {
 
     Ok(activities)
 }
+
+#[tauri::command]
+pub fn delete_activity(app: tauri::AppHandle, activity_id: String) -> Result<(), String> {
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            "DELETE FROM activities WHERE id = ?1",
+            params![activity_id],
+        )
+        .map_err(|error| format!("Could not delete activity: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Activity was not found.".to_string());
+    }
+
+    Ok(())
+}

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
   createActivity,
+  deleteActivity,
   listActivities,
   type Activity,
   type ActivityStatus,
@@ -327,6 +328,7 @@ export function ActivitiesPage() {
           >
             {isSaving ? 'Salvando...' : 'Adicionar atividade'}
           </button>
+
         </form>
       </section>
 
@@ -406,6 +408,14 @@ export function ActivitiesPage() {
                       {activity.description}
                     </p>
                   ) : null}
+
+                  <button
+                    type="button"
+                    className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                    onClick={() => handleDeleteActivity(activity)}
+                  >
+                    Excluir
+                  </button>
                 </div>
               </article>
             ))}
@@ -414,4 +424,26 @@ export function ActivitiesPage() {
       </section>
     </div>
   );
+
+  async function handleDeleteActivity(activity: Activity) {
+    const confirmed = window.confirm(
+      `Excluir a atividade "${activity.title}"?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      await deleteActivity(activity.id);
+      await loadActivities();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível excluir a atividade.',
+      );
+    }
+  }
 }

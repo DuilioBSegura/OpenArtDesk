@@ -38,3 +38,9 @@ export async function createActivity(
     input,
   });
 }
+
+export async function deleteActivity(activityId: string): Promise<void> {
+  return invoke<void>('delete_activity', {
+    activityId,
+  });
+}

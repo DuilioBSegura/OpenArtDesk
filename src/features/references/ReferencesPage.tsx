@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
   createReference,
+  deleteReference,
   listReferences,
   openReferenceUrl,
   type ReferenceItem,
@@ -341,14 +342,24 @@ export function ReferencesPage() {
                     ) : null}
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!reference.url}
-                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => handleOpenReference(reference.id)}
-                  >
-                    Abrir link
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={!reference.url}
+                      className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => handleOpenReference(reference.id)}
+                    >
+                      Abrir link
+                    </button>
+
+                    <button
+                      type="button"
+                      className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                      onClick={() => handleDeleteReference(reference)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -357,4 +368,25 @@ export function ReferencesPage() {
       </section>
     </div>
   );
+  async function handleDeleteReference(reference: ReferenceItem) {
+    const confirmed = window.confirm(
+      `Excluir a referência "${reference.title}"?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      await deleteReference(reference.id);
+      await loadReferences();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível excluir a referência.',
+      );
+    }
+  }
 }

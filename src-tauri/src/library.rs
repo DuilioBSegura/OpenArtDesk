@@ -278,3 +278,32 @@ pub fn open_library_item_file(app: tauri::AppHandle, item_id: String) -> Result<
 
     Ok(())
 }
+#[tauri::command]
+pub fn delete_library_item(app: tauri::AppHandle, item_id: String) -> Result<(), String> {
+    let item = get_library_item_by_id(&app, &item_id)?;
+
+    let connection = open_connection(&app)?;
+
+    connection
+        .execute(
+            "DELETE FROM library_items WHERE id = ?1",
+            params![item_id],
+        )
+        .map_err(|error| format!("Could not delete library item: {error}"))?;
+
+    if let Some(file_path) = item.file_path {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
+
+        let absolute_path = app_data_dir.join(file_path);
+
+        if absolute_path.exists() {
+            fs::remove_file(&absolute_path)
+                .map_err(|error| format!("Could not remove library PDF file: {error}"))?;
+        }
+    }
+
+    Ok(())
+}

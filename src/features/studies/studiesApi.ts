@@ -31,3 +31,9 @@ export async function createStudy(input: CreateStudyInput): Promise<Study> {
     input,
   });
 }
+
+export async function deleteStudy(studyId: string): Promise<void> {
+  return invoke<void>('delete_study', {
+    studyId,
+  });
+}

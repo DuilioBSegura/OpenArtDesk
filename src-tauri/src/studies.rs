@@ -232,3 +232,33 @@ pub fn list_studies(app: tauri::AppHandle) -> Result<Vec<Study>, String> {
 
     Ok(studies)
 }
+
+#[tauri::command]
+pub fn delete_study(app: tauri::AppHandle, study_id: String) -> Result<(), String> {
+    let study = get_study_by_id(&app, &study_id)?;
+
+    let connection = open_connection(&app)?;
+
+    connection
+        .execute(
+            "DELETE FROM studies WHERE id = ?1",
+            params![study_id],
+        )
+        .map_err(|error| format!("Could not delete study: {error}"))?;
+
+    if let Some(image_path) = study.image_path {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
+
+        let absolute_path = app_data_dir.join(image_path);
+
+        if absolute_path.exists() {
+            fs::remove_file(&absolute_path)
+                .map_err(|error| format!("Could not remove study image file: {error}"))?;
+        }
+    }
+
+    Ok(())
+}

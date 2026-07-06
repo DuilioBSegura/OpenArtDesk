@@ -216,3 +216,21 @@ pub fn open_reference_url(app: tauri::AppHandle, reference_id: String) -> Result
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn delete_reference(app: tauri::AppHandle, reference_id: String) -> Result<(), String> {
+    let connection = open_connection(&app)?;
+
+    let affected_rows = connection
+        .execute(
+            "DELETE FROM reference_items WHERE id = ?1",
+            params![reference_id],
+        )
+        .map_err(|error| format!("Could not delete reference: {error}"))?;
+
+    if affected_rows == 0 {
+        return Err("Reference was not found.".to_string());
+    }
+
+    Ok(())
+}

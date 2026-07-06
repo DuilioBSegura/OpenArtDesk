@@ -38,3 +38,9 @@ export async function openReferenceUrl(referenceId: string): Promise<void> {
     referenceId,
   });
 }
+
+export async function deleteReference(referenceId: string): Promise<void> {
+  return invoke<void>('delete_reference', {
+    referenceId,
+  });
+}

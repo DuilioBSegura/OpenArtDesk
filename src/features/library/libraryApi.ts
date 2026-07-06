@@ -46,3 +46,9 @@ export async function openLibraryItemFile(itemId: string): Promise<void> {
     itemId,
   });
 }
+
+export async function deleteLibraryItem(itemId: string): Promise<void> {
+  return invoke<void>('delete_library_item', {
+    itemId,
+  });
+}

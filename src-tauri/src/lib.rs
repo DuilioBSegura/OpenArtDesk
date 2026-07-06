@@ -38,6 +38,10 @@ pub fn run() {
             references::list_references,
             references::open_reference_url,
             dashboard::get_dashboard_summary,
+            library::delete_library_item,
+            studies::delete_study,
+            activities::delete_activity,
+            references::delete_reference,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

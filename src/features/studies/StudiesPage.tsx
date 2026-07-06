@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
   createStudy,
+  deleteStudy,
   listStudies,
   type Study,
   type StudyDifficulty,
@@ -326,6 +327,14 @@ export function StudiesPage() {
                     </p>
                   ) : null}
                 </div>
+
+                <button
+                  type="button"
+                  className="w-fit rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                  onClick={() => handleDeleteStudy(study)}
+                >
+                  Excluir
+                </button>
               </article>
             ))}
           </div>
@@ -333,4 +342,26 @@ export function StudiesPage() {
       </section>
     </div>
   );
+
+  async function handleDeleteStudy(study: Study) {
+    const confirmed = window.confirm(
+      `Excluir o estudo "${study.title}"?\n\nSe houver imagem importada, ela também será removida da pasta local do OpenArtDesk.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      await deleteStudy(study.id);
+      await loadStudies();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível excluir o estudo.',
+      );
+    }
+  }
 }

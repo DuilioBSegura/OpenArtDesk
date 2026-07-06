@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
   createLibraryItem,
+  deleteLibraryItem,
   listLibraryItems,
   openLibraryItemFile,
   type LibraryItem,
@@ -350,6 +351,14 @@ export function LibraryPage() {
                   >
                     Abrir PDF
                   </button>
+
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+                    onClick={() => handleDeleteItem(item)}
+                  >
+                    Excluir
+                  </button>
                 </div>
               </article>
             ))}
@@ -358,4 +367,27 @@ export function LibraryPage() {
       </section>
     </div>
   );
+
+  async function handleDeleteItem(item: LibraryItem) {
+  const confirmed = window.confirm(
+    `Excluir "${item.title}" da biblioteca?\n\nO PDF importado também será removido da pasta local do OpenArtDesk.`,
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setErrorMessage(null);
+    await deleteLibraryItem(item.id);
+    await loadItems();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível excluir o item da biblioteca.',
+    );
+  }
+}
+
 }
