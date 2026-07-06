@@ -1,7 +1,6 @@
+use crate::db::{database_file_name, open_connection};
 use rusqlite::{Connection, OptionalExtension};
 use serde::Serialize;
-use std::fs;
-use tauri::Manager;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,27 +10,6 @@ pub struct DatabaseStatus {
     pub schema_version: Option<String>,
     pub tables: Vec<String>,
     pub error: Option<String>,
-}
-
-fn database_file_name() -> &'static str {
-    "openartdesk.sqlite"
-}
-
-fn database_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    fs::create_dir_all(&app_data_dir)
-        .map_err(|error| format!("Could not create app data directory: {error}"))?;
-
-    Ok(app_data_dir.join(database_file_name()))
-}
-
-fn open_connection(app: &tauri::AppHandle) -> Result<Connection, String> {
-    let path = database_path(app)?;
-    Connection::open(path).map_err(|error| format!("Could not open SQLite database: {error}"))
 }
 
 fn apply_schema(connection: &Connection) -> Result<(), String> {

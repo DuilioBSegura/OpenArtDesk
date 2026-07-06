@@ -8,6 +8,7 @@ import {
   type Study,
   type StudyDifficulty,
 } from './studiesApi';
+import { fileToNumberArray } from '../../shared/utils/file';
 
 const categoryLabels: Record<string, string> = {
   'drawing-fundamentals': 'Fundamentos do desenho',
@@ -27,12 +28,6 @@ const difficultyLabels: Record<StudyDifficulty, string> = {
   medium: 'Médio',
   hard: 'Difícil',
 };
-
-async function fileToNumberArray(file: File): Promise<number[]> {
-  const buffer = await file.arrayBuffer();
-
-  return Array.from(new Uint8Array(buffer));
-}
 
 function isSupportedImage(file: File) {
   const lowerName = file.name.toLowerCase();
@@ -57,9 +52,32 @@ export function StudiesPage() {
   const [difficulty, setDifficulty] = useState<StudyDifficulty>('medium');
   const [description, setDescription] = useState('');
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | StudyDifficulty>('all');
+
   const canSubmit = useMemo(() => {
     return title.trim().length > 0 && !isSaving;
   }, [title, isSaving]);
+
+  const filteredStudies = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return studies.filter((study) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        study.title.toLowerCase().includes(normalizedSearch) ||
+        study.description?.toLowerCase().includes(normalizedSearch);
+
+      const matchesCategory =
+        categoryFilter === 'all' || study.category === categoryFilter;
+
+      const matchesDifficulty =
+        difficultyFilter === 'all' || study.difficulty === difficultyFilter;
+
+      return matchesSearch && matchesCategory && matchesDifficulty;
+    });
+  }, [studies, searchQuery, categoryFilter, difficultyFilter]);
 
   async function loadStudies() {
     try {
@@ -250,6 +268,85 @@ export function StudiesPage() {
             {isSaving ? 'Salvando...' : 'Adicionar estudo'}
           </button>
         </form>
+      </section>
+      
+      <section className="rounded-2xl border border-border bg-surface p-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-foreground">
+            Buscar e filtrar estudos
+          </h2>
+
+          <p className="text-sm text-muted-foreground">
+            Refine seus estudos por texto, categoria e dificuldade.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-2 text-sm text-foreground">
+            Busca
+            <input
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Título ou observações..."
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm text-foreground">
+            Categoria
+            <select
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+            >
+              <option value="all">Todas</option>
+              <option value="drawing-fundamentals">Fundamentos do desenho</option>
+              <option value="anatomy">Anatomia</option>
+              <option value="perspective">Perspectiva</option>
+              <option value="composition">Composição</option>
+              <option value="color-theory">Cor e luz</option>
+              <option value="digital-painting">Pintura digital</option>
+              <option value="gesture">Gesture drawing</option>
+              <option value="characters">Personagens</option>
+              <option value="scenarios">Cenários</option>
+              <option value="other">Outro</option>
+            </select>
+          </label>
+
+          <label className="grid gap-2 text-sm text-foreground">
+            Dificuldade
+            <select
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={difficultyFilter}
+              onChange={(event) =>
+                setDifficultyFilter(event.target.value as 'all' | StudyDifficulty)
+              }
+            >
+              <option value="all">Todas</option>
+              <option value="easy">Fácil</option>
+              <option value="medium">Médio</option>
+              <option value="hard">Difícil</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {filteredStudies.length} de {studies.length} estudo(s).
+          </p>
+
+          <button
+            type="button"
+            className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+            onClick={() => {
+              setSearchQuery('');
+              setCategoryFilter('all');
+              setDifficultyFilter('all');
+            }}
+          >
+            Limpar filtros
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-6">

@@ -8,39 +8,7 @@ import {
   type DashboardStudy,
   type DashboardSummary,
 } from './dashboardApi';
-
-function formatDuration(minutes: number) {
-  if (minutes <= 0) {
-    return '0 min';
-  }
-
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (remainingMinutes === 0) {
-    return `${hours}h`;
-  }
-
-  return `${hours}h ${remainingMinutes}min`;
-}
-
-function formatOptionalDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Sem data';
-  }
-
-  const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Data inválida';
-  }
-
-  return date.toLocaleDateString();
-}
+import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 
 function normalizeDisplayUrl(url: string | null) {
   if (!url) {
@@ -210,7 +178,7 @@ function RecentActivities({ activities }: { activities: DashboardActivity[] }) {
             ) : null}
 
             <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-              {formatDuration(activity.durationMinutes ?? 0)}
+              {formatDuration(activity.durationMinutes ?? 0, '0 min')}
             </span>
 
             <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
@@ -370,7 +338,7 @@ export function DashboardPage() {
 
             <DashboardMetricCard
               label="Tempo concluído"
-              value={formatDuration(summary.totals.totalCompletedMinutes)}
+              value={formatDuration(summary.totals.totalCompletedMinutes, '0 min')}
               description="Soma das atividades concluídas"
             />
           </section>

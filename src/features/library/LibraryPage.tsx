@@ -9,6 +9,8 @@ import {
   type LibraryItem,
   type LibraryItemStatus,
 } from './libraryApi';
+import { fileToNumberArray } from '../../shared/utils/file';
+import { formatFileSize } from '../../shared/utils/formatters';
 
 const statusLabels: Record<LibraryItemStatus, string> = {
   'to-read': 'Quero ler',
@@ -16,22 +18,6 @@ const statusLabels: Record<LibraryItemStatus, string> = {
   completed: 'Concluído',
   paused: 'Pausado',
 };
-
-function formatFileSize(fileSize: number | null) {
-  if (!fileSize) {
-    return 'Tamanho desconhecido';
-  }
-
-  const sizeInMb = fileSize / 1024 / 1024;
-
-  return `${sizeInMb.toFixed(2)} MB`;
-}
-
-async function fileToNumberArray(file: File): Promise<number[]> {
-  const buffer = await file.arrayBuffer();
-
-  return Array.from(new Uint8Array(buffer));
-}
 
 export function LibraryPage() {
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -45,6 +31,30 @@ export function LibraryPage() {
   const [category, setCategory] = useState('drawing-fundamentals');
   const [status, setStatus] = useState<LibraryItemStatus>('to-read');
   const [description, setDescription] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | LibraryItemStatus>('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  const filteredItems = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return items.filter((item) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        item.title.toLowerCase().includes(normalizedSearch) ||
+        item.author?.toLowerCase().includes(normalizedSearch) ||
+        item.description?.toLowerCase().includes(normalizedSearch) ||
+        item.originalFileName?.toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus =
+        statusFilter === 'all' || item.status === statusFilter;
+
+      const matchesCategory =
+        categoryFilter === 'all' || item.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [items, searchQuery, statusFilter, categoryFilter]);
 
   const canSubmit = useMemo(() => {
     return title.trim().length > 0 && selectedFile !== null && !isSaving;
@@ -266,6 +276,83 @@ export function LibraryPage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-foreground">
+            Buscar e filtrar biblioteca
+          </h2>
+
+          <p className="text-sm text-muted-foreground">
+            Refine seus PDFs por texto, status e categoria.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-2 text-sm text-foreground">
+            Busca
+            <input
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Título, autor ou arquivo..."
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm text-foreground">
+            Status
+            <select
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as 'all' | LibraryItemStatus)
+              }
+            >
+              <option value="all">Todos</option>
+              <option value="to-read">Quero ler</option>
+              <option value="reading">Lendo</option>
+              <option value="completed">Concluído</option>
+              <option value="paused">Pausado</option>
+            </select>
+          </label>
+
+          <label className="grid gap-2 text-sm text-foreground">
+            Categoria
+            <select
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+            >
+              <option value="all">Todas</option>
+              <option value="drawing-fundamentals">Fundamentos do desenho</option>
+              <option value="anatomy">Anatomia</option>
+              <option value="perspective">Perspectiva</option>
+              <option value="composition">Composição</option>
+              <option value="color-theory">Cor e luz</option>
+              <option value="digital-painting">Pintura digital</option>
+              <option value="other">Outro</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {filteredItems.length} de {items.length} item(ns).
+          </p>
+
+          <button
+            type="button"
+            className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+              setCategoryFilter('all');
+            }}
+          >
+            Limpar filtros
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">
@@ -278,7 +365,7 @@ export function LibraryPage() {
           </div>
 
           <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            {items.length} item(ns)
+            {filteredItems.length} item(ns)
           </span>
         </div>
 
@@ -286,7 +373,7 @@ export function LibraryPage() {
           <p className="text-sm text-muted-foreground">
             Carregando biblioteca...
           </p>
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface-elevated p-6">
             <p className="text-sm font-medium text-foreground">
               Nenhum PDF cadastrado ainda.
@@ -299,7 +386,7 @@ export function LibraryPage() {
           </div>
         ) : (
           <div className="grid gap-3">
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <article
                 key={item.id}
                 className="rounded-xl border border-border bg-surface-elevated p-4"

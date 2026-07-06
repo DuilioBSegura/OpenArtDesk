@@ -1,8 +1,8 @@
-use rusqlite::{params, Connection};
+use crate::db::{app_data_dir, open_connection};
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,28 +28,8 @@ pub struct Study {
     pub updated_at: String,
 }
 
-fn database_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    Ok(app_data_dir.join("openartdesk.sqlite"))
-}
-
-fn open_connection(app: &tauri::AppHandle) -> Result<Connection, String> {
-    let path = database_path(app)?;
-
-    Connection::open(path).map_err(|error| format!("Could not open SQLite database: {error}"))
-}
-
 fn study_images_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    let images_dir = app_data_dir.join("files").join("studies").join("images");
+    let images_dir = app_data_dir(app)?.join("files").join("studies").join("images");
 
     fs::create_dir_all(&images_dir)
         .map_err(|error| format!("Could not create study images directory: {error}"))?;
@@ -247,12 +227,7 @@ pub fn delete_study(app: tauri::AppHandle, study_id: String) -> Result<(), Strin
         .map_err(|error| format!("Could not delete study: {error}"))?;
 
     if let Some(image_path) = study.image_path {
-        let app_data_dir = app
-            .path()
-            .app_data_dir()
-            .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-        let absolute_path = app_data_dir.join(image_path);
+        let absolute_path = app_data_dir(&app)?.join(image_path);
 
         if absolute_path.exists() {
             fs::remove_file(&absolute_path)

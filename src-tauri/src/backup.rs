@@ -1,8 +1,8 @@
+use crate::db::app_data_dir;
 use serde::Serialize;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use tauri::Manager;
 use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
@@ -18,15 +18,7 @@ pub struct BackupResult {
 }
 
 fn app_data_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    fs::create_dir_all(&app_data_dir)
-        .map_err(|error| format!("Could not create app data directory: {error}"))?;
-
-    Ok(app_data_dir)
+    app_data_dir(app)
 }
 
 fn backups_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {

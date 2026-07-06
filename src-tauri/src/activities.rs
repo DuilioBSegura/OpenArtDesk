@@ -1,7 +1,6 @@
-use rusqlite::{params, Connection};
+use crate::db::open_connection;
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use tauri::Manager;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,21 +27,6 @@ pub struct Activity {
     pub status: String,
     pub created_at: String,
     pub updated_at: String,
-}
-
-fn database_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    Ok(app_data_dir.join("openartdesk.sqlite"))
-}
-
-fn open_connection(app: &tauri::AppHandle) -> Result<Connection, String> {
-    let path = database_path(app)?;
-
-    Connection::open(path).map_err(|error| format!("Could not open SQLite database: {error}"))
 }
 
 fn now_string() -> String {

@@ -9,6 +9,7 @@ import {
   type ActivityStatus,
   type EnergyLevel,
 } from './activitiesApi';
+import { formatDuration, formatOptionalDate } from '../../shared/utils/formatters';
 
 const statusLabels: Record<ActivityStatus, string> = {
   planned: 'Planejada',
@@ -38,31 +39,8 @@ function todayAsInputDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatDuration(minutes: number | null) {
-  if (!minutes) {
-    return 'Sem duração';
-  }
-
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (remainingMinutes === 0) {
-    return `${hours}h`;
-  }
-
-  return `${hours}h ${remainingMinutes}min`;
-}
-
 function formatActivityDate(activityDate: string | null) {
-  if (!activityDate) {
-    return 'Sem data';
-  }
-
-  return new Date(`${activityDate}T00:00:00`).toLocaleDateString();
+  return formatOptionalDate(activityDate);
 }
 
 export function ActivitiesPage() {
@@ -79,23 +57,50 @@ export function ActivitiesPage() {
   const [status, setStatus] = useState<ActivityStatus>('done');
   const [description, setDescription] = useState('');
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ActivityStatus>('all');
+  const [focusFilter, setFocusFilter] = useState('all');
+  const [energyFilter, setEnergyFilter] = useState<'all' | EnergyLevel>('all');
+
+  const canSubmit = useMemo(() => {
+    return title.trim().length > 0 && !isSaving;
+  }, [title, isSaving]);
+
+  const filteredActivities = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return activities.filter((activity) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        activity.title.toLowerCase().includes(normalizedSearch) ||
+        activity.description?.toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus =
+        statusFilter === 'all' || activity.status === statusFilter;
+
+      const matchesFocus =
+        focusFilter === 'all' || activity.focusArea === focusFilter;
+
+      const matchesEnergy =
+        energyFilter === 'all' || activity.energyLevel === energyFilter;
+
+      return matchesSearch && matchesStatus && matchesFocus && matchesEnergy;
+    });
+  }, [activities, searchQuery, statusFilter, focusFilter, energyFilter]);
+
   const totalMinutes = useMemo(() => {
-    return activities.reduce((total, activity) => {
+    return filteredActivities.reduce((total, activity) => {
       if (activity.status !== 'done') {
         return total;
       }
 
       return total + (activity.durationMinutes ?? 0);
     }, 0);
-  }, [activities]);
+  }, [filteredActivities]);
 
   const completedActivities = useMemo(() => {
-    return activities.filter((activity) => activity.status === 'done').length;
-  }, [activities]);
-
-  const canSubmit = useMemo(() => {
-    return title.trim().length > 0 && !isSaving;
-  }, [title, isSaving]);
+    return filteredActivities.filter((activity) => activity.status === 'done').length;
+  }, [filteredActivities]);
 
   async function loadActivities() {
     try {
@@ -332,6 +337,101 @@ export function ActivitiesPage() {
 
         </form>
       </section>
+        
+        <section className="rounded-2xl border border-border bg-surface p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Buscar e filtrar atividades
+            </h2>
+
+            <p className="text-sm text-muted-foreground">
+              Refine práticas por texto, status, foco e energia.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            <label className="grid gap-2 text-sm text-foreground">
+              Busca
+              <input
+                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Título ou observações..."
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              Status
+              <select
+                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as 'all' | ActivityStatus)
+                }
+              >
+                <option value="all">Todos</option>
+                <option value="planned">Planejada</option>
+                <option value="done">Concluída</option>
+                <option value="skipped">Pulada</option>
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              Foco
+              <select
+                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                value={focusFilter}
+                onChange={(event) => setFocusFilter(event.target.value)}
+              >
+                <option value="all">Todos</option>
+                <option value="drawing">Desenho</option>
+                <option value="anatomy">Anatomia</option>
+                <option value="perspective">Perspectiva</option>
+                <option value="composition">Composição</option>
+                <option value="color">Cor e luz</option>
+                <option value="painting">Pintura digital</option>
+                <option value="reading">Leitura</option>
+                <option value="review">Revisão</option>
+                <option value="other">Outro</option>
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              Energia
+              <select
+                className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-foreground outline-none"
+                value={energyFilter}
+                onChange={(event) =>
+                  setEnergyFilter(event.target.value as 'all' | EnergyLevel)
+                }
+              >
+                <option value="all">Todas</option>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {filteredActivities.length} de {activities.length} atividade(s).
+            </p>
+
+            <button
+              type="button"
+              className="rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setFocusFilter('all');
+                setEnergyFilter('all');
+              }}
+            >
+              Limpar filtros
+            </button>
+          </div>
+        </section>
 
       <section className="rounded-2xl border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between gap-4">

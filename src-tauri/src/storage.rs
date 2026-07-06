@@ -1,7 +1,7 @@
+use crate::db::app_data_dir;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,15 +35,7 @@ fn required_directories() -> Vec<(&'static str, &'static str)> {
 }
 
 fn app_storage_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("Could not resolve app data directory: {error}"))?;
-
-    fs::create_dir_all(&app_data_dir)
-        .map_err(|error| format!("Could not create app data directory: {error}"))?;
-
-    Ok(app_data_dir)
+    app_data_dir(app)
 }
 
 pub fn initialize_storage(app: &tauri::AppHandle) -> Result<(), String> {

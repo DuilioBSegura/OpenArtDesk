@@ -5,16 +5,7 @@ import {
   openBackupsFolder,
   type BackupResult,
 } from './backupApi';
-
-function formatFileSize(sizeBytes: number) {
-  const sizeInMb = sizeBytes / 1024 / 1024;
-
-  if (sizeInMb < 1) {
-    return `${(sizeBytes / 1024).toFixed(2)} KB`;
-  }
-
-  return `${sizeInMb.toFixed(2)} MB`;
-}
+import { formatFileSize } from '../../shared/utils/formatters';
 
 export function BackupPanel() {
   const [lastBackup, setLastBackup] = useState<BackupResult | null>(null);
@@ -114,7 +105,7 @@ export function BackupPanel() {
           <div className="rounded-xl border border-border bg-surface-elevated p-4">
             <p className="text-xs text-muted-foreground">Tamanho</p>
             <p className="mt-1 text-sm font-medium text-foreground">
-              {formatFileSize(lastBackup.sizeBytes)}
+              {formatFileSize(lastBackup.sizeBytes, { useKbBelowMb: true })}
             </p>
           </div>
         </div>
