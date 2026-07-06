@@ -4,6 +4,7 @@ mod storage;
 mod library;
 mod backup;
 mod studies;
+mod activities;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -29,6 +30,8 @@ pub fn run() {
             backup::open_backups_folder,
             studies::create_study,
             studies::list_studies,
+            activities::create_activity,
+            activities::list_activities,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
