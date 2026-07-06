@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { BackupPanel } from './BackupPanel';
+
 import {
   getDatabaseStatus,
   type DatabaseStatus,
@@ -258,6 +260,9 @@ export function LocalDataPage() {
           </div>
         )}
       </section>
+       <BackupPanel/>
     </div>
+    
+     
   );
 }

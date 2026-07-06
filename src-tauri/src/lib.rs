@@ -2,6 +2,7 @@ mod database;
 mod preferences;
 mod storage;
 mod library;
+mod backup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,7 +23,9 @@ pub fn run() {
             storage::get_storage_status,
             library::create_library_item,
             library::list_library_items,
-            library::open_library_item_file
+            library::open_library_item_file,
+            backup::create_full_backup,
+            backup::open_backups_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
